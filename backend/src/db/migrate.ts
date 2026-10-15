@@ -23,6 +23,19 @@ export function migrate(db: InstanceType<typeof Database>): void {
   // Migration for existing tables: safely add symbol columns if missing
   try { db.exec("ALTER TABLE trades ADD COLUMN symbol TEXT NOT NULL DEFAULT 'Step Index'"); } catch {}
   try { db.exec("ALTER TABLE market_ticks ADD COLUMN symbol TEXT NOT NULL DEFAULT 'Step Index'"); } catch {}
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS deals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      deal_ticket TEXT UNIQUE,
+      order_ticket TEXT,
+      symbol TEXT NOT NULL,
+      type TEXT NOT NULL,
+      volume REAL NOT NULL,
+      price REAL NOT NULL,
+      profit REAL NOT NULL,
+      close_time TEXT NOT NULL
+    );`);
+  } catch {}
   seedDefaults(db);
 }
 

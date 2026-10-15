@@ -10,8 +10,8 @@ backend/data/*.sqlite-shm
 backend/data/*.sqlite-wal
 backend/data/scalarai.sqlite
 
-# Explicitly preserve Bridge 2 and bridge modules
-!backend/bridge2/
-!backend/bridge2/**
-!backend/bridge/
-!backend/bridge/**
+# Preserve gateway and ea folders
+!gateway/
+!gateway/**
+!ea/
+!ea/**

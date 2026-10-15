@@ -22,32 +22,39 @@ export function registerEaRoutes(
 
   app.get("/api/ea/download", (req: Request, res: Response) => {
     try {
-      const queryUrl = (req.query.url as string)?.trim();
-      let appUrl = queryUrl || `${req.protocol}://${req.get("host")}`;
-      appUrl = appUrl.replace(/\/$/, "");
-      if (!appUrl) appUrl = "http://127.0.0.1:3000";
-
-      const currentConfig = getConfig();
-      const mql5Code = generateMql5Code(appUrl, currentConfig);
-
-      res.setHeader("Content-Disposition", "attachment; filename=ScalarAI_MultiAsset_EA.mq5");
+      const eaCandidates = [
+        path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5"),
+        path.resolve(process.cwd(), "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+      ];
+      let eaPath = "";
+      for (const candidate of eaCandidates) {
+        if (fs.existsSync(candidate)) {
+          eaPath = candidate;
+          break;
+        }
+      }
+      if (!eaPath) {
+        return res.status(404).send("// ScalarAI_Gateway_EA.mq5 not found");
+      }
+      res.setHeader("Content-Disposition", 'attachment; filename="ScalarAI_Gateway_EA.mq5"');
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.send(mql5Code);
+      fs.createReadStream(eaPath).pipe(res);
     } catch (err: unknown) {
-      console.error("EA download generator error:", err);
-      res.status(500).send("// Failed to generate MQL5 EA");
+      console.error("EA download error:", err);
+      res.status(500).send("// Failed to download MQL5 EA");
     }
   });
 
   app.get("/api/ea/generator-source", (req: Request, res: Response) => {
     try {
-      const currentConfig = getConfig();
-      const appUrl = `${req.protocol}://${req.get("host")}`;
-      const code = generateMql5Code(appUrl, currentConfig);
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.send(code);
-    } catch (err: unknown) {
-      res.status(500).json({ error: "Failed to fetch generator source" });
+      const eaPath = path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5");
+      if (fs.existsSync(eaPath)) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        return fs.createReadStream(eaPath).pipe(res);
+      }
+      res.status(404).json({ error: "EA file not found" });
+    } catch {
+      res.status(500).json({ error: "Failed to read EA source" });
     }
   });
 

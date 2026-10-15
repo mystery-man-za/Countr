@@ -6,6 +6,8 @@ import {
   Terminal,
   Settings,
   Cpu,
+  Wallet,
+  FlaskConical,
 } from "lucide-react";
 import {
   StrategyMode,
@@ -38,11 +40,12 @@ import {
   Badge,
   Button,
   AppShell,
-  BridgeConsole,
+  PortfolioView,
+  ResearchLab,
+  GatewayConsole,
 } from "./components";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useChartData } from "./hooks/useChartData";
-import { useDownloadBridge } from "./hooks/useDownloadBridge";
 import { useAiStudyFeed } from "./hooks/useAiStudyFeed";
 import { useTradingControls } from "./hooks/useTradingControls";
 import { useSettings, type SettingsState } from "./hooks/useSettings";
@@ -106,7 +109,7 @@ export default function App() {
   const [pingLatency, setPingLatency] = useState<number | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [filterLogLevel, setFilterLogLevel] = useState<string>("ALL");
-  const [currentNavTab, setCurrentNavTab] = useState<"home" | "risk" | "bridge" | "downloads" | "logs" | "settings">("home");
+  const [currentNavTab, setCurrentNavTab] = useState<"home" | "portfolio" | "research" | "gateway" | "risk" | "downloads" | "logs" | "settings">("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showEma, setShowEma] = useState<boolean>(true);
@@ -391,11 +394,6 @@ export default function App() {
     }
   };
 
-  const { downloadNodejsBridge } = useDownloadBridge({
-    appEndpoint: config.appEndpoint,
-    mt5Path: config.mt5Path,
-  });
-
   // Compute Chart Data via Hook
   const chartData = useChartData(candles, history, 80);
 
@@ -448,11 +446,13 @@ export default function App() {
         {/* Navigation Tabs Bar */}
         <TabBar
           tabs={[
-            { id: "home", label: "Live Trading", icon: Home, badge: `$${currentPrice.toFixed(1)}` },
-            { id: "risk", label: "Risk & Strategy", icon: Sliders, badge: config.selectedStrategy },
-            { id: "bridge", label: "MCP Bridge 2", icon: Cpu, badge: "AI Ready" },
-            { id: "downloads", label: "Downloads Center", icon: Download },
-            { id: "logs", label: "System Logs", icon: Terminal, badge: `${logs.length}` },
+            { id: "home", label: "Trading Terminal", icon: Home, badge: `$${currentPrice.toFixed(1)}` },
+            { id: "portfolio", label: "Portfolio & Deals", icon: Wallet, badge: `${tradesList.length}` },
+            { id: "research", label: "Research & Backtest", icon: FlaskConical, badge: "Lab" },
+            { id: "gateway", label: "MT5 EA Gateway", icon: Cpu, badge: isBridgeConnected ? "Live" : "Ready" },
+            { id: "risk", label: "Bot & Risk Controls", icon: Sliders, badge: config.selectedStrategy },
+            { id: "downloads", label: "Downloads (EA v2.50)", icon: Download },
+            { id: "logs", label: "System Logs & DB", icon: Terminal, badge: `${logs.length}` },
             { id: "settings", label: "Settings", icon: Settings },
           ]}
           activeTab={currentNavTab}
@@ -634,10 +634,29 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 3: MCP Bridge 2 Console (Zero-Download External AI Control) */}
-        {currentNavTab === "bridge" && (
+        {/* Tab 2: Portfolio & Deals (Cotrade-style Account, Open Positions, Closed Deals) */}
+        {currentNavTab === "portfolio" && (
           <div className="space-y-6 animate-fade-in">
-            <BridgeConsole
+            <PortfolioView
+              activeSymbol={activeSymbol}
+              onTradeActionComplete={fetchStatus}
+            />
+          </div>
+        )}
+
+        {/* Tab 3: Research & Strategy Backtesting Lab (Cotrade-style) */}
+        {currentNavTab === "research" && (
+          <div className="space-y-6 animate-fade-in">
+            <ResearchLab
+              activeSymbol={activeSymbol}
+            />
+          </div>
+        )}
+
+        {/* Tab 4: MT5 EA Gateway Console */}
+        {currentNavTab === "gateway" && (
+          <div className="space-y-6 animate-fade-in">
+            <GatewayConsole
               activeSymbol={activeSymbol}
               isBridgeConnected={isBridgeConnected}
               onTradeActionComplete={fetchStatus}
@@ -660,7 +679,6 @@ export default function App() {
               setCopiedLink(true);
               setTimeout(() => setCopiedLink(false), 2000);
             }}
-            onDownloadNodejsBridge={downloadNodejsBridge}
             getAppBaseUrl={settings.getAppBaseUrl}
           />
         )}

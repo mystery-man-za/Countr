@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, Layers, Code2, Terminal, Check, Copy, FileCode, PlayCircle, Eye, X, ShieldCheck } from "lucide-react";
+import { Download, Layers, Check, Copy, Eye, X, ShieldCheck, Cpu, Terminal, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { TradeConfig } from "../../types";
 
 export interface DownloadsCenterProps {
@@ -11,7 +11,7 @@ export interface DownloadsCenterProps {
   onSetEndpoint: (endpoint: string) => void;
   onSaveEndpoint: (endpoint: string) => void;
   onCopyLink: (text: string) => void;
-  onDownloadNodejsBridge: () => void;
+  onDownloadNodejsBridge?: () => void;
   getAppBaseUrl: () => string;
 }
 
@@ -20,25 +20,18 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
   activeSymbol,
   isBridgeConnected,
   appEndpoint,
-  copiedLink,
-  onSetEndpoint,
-  onSaveEndpoint,
-  onCopyLink,
-  onDownloadNodejsBridge,
   getAppBaseUrl,
 }) => {
-  const effectiveUrl = appEndpoint || config.appEndpoint || "http://127.0.0.1:3000";
-  const downloadUrl = `/api/ea/download?url=${encodeURIComponent(effectiveUrl)}`;
-  const installScriptUrl = `/api/ea/install-script?url=${encodeURIComponent(effectiveUrl)}`;
-  const installPsUrl = `/api/ea/install-powershell?url=${encodeURIComponent(effectiveUrl)}`;
+  const effectiveUrl = typeof window !== "undefined" ? window.location.origin : (appEndpoint || "http://127.0.0.1:3000");
+  const downloadUrl = "/api/ea/download";
 
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
   const [eaCode, setEaCode] = useState<string>("");
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
+  const [verifyingGateway, setVerifyingGateway] = useState(false);
+  const [gatewayStatus, setGatewayStatus] = useState<any>(null);
 
   const handleCopyUrl = async () => {
     try {
@@ -50,27 +43,11 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
     }
   };
 
-  const handleResetMasterEa = async () => {
-    try {
-      setResetting(true);
-      const res = await fetch("/api/ea/reset", { method: "POST" });
-      if (res.ok) {
-        setResetSuccess(true);
-        setEaCode("");
-        setTimeout(() => setResetSuccess(false), 4000);
-      }
-    } catch (err) {
-      console.error("Failed to reset EA template:", err);
-    } finally {
-      setResetting(false);
-    }
-  };
-
   const handleCopyCode = async () => {
     try {
       let codeToCopy = eaCode;
       if (!codeToCopy) {
-        const res = await fetch(`/api/ea/code?url=${encodeURIComponent(effectiveUrl)}`);
+        const res = await fetch("/api/ea/generator-source");
         codeToCopy = await res.text();
         setEaCode(codeToCopy);
       }
@@ -87,14 +64,29 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
     if (!eaCode) {
       setCodeLoading(true);
       try {
-        const res = await fetch(`/api/ea/code?url=${encodeURIComponent(effectiveUrl)}`);
+        const res = await fetch("/api/ea/generator-source");
         const text = await res.text();
         setEaCode(text);
       } catch (err) {
-        setEaCode("// Failed to fetch EA code from server");
+        setEaCode("// Failed to fetch EA source from server");
       } finally {
         setCodeLoading(false);
       }
+    }
+  };
+
+  const handleVerifyGateway = async () => {
+    setVerifyingGateway(true);
+    try {
+      const res = await fetch("/api/gateway/status");
+      if (res.ok) {
+        const data = await res.json();
+        setGatewayStatus(data);
+      }
+    } catch (err) {
+      console.error("Failed to check gateway status:", err);
+    } finally {
+      setVerifyingGateway(false);
     }
   };
 
@@ -102,28 +94,29 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
       {/* Left side download options (lg:col-span-5) */}
       <div className="lg:col-span-5 flex flex-col gap-6">
-        {/* 1. MQ5 Expert Advisor Card */}
+        {/* 1. Master EA Card */}
         <div className="card-panel flex flex-col space-y-4 border-indigo-500/30 shadow-indigo-950/20">
           <div className="card-panel-header">
             <div className="card-panel-title flex items-center gap-2">
               <Download className="w-4 h-4 text-indigo-400" />
-              <span>MetaTrader 5 Expert Advisor</span>
+              <span>MetaTrader 5 Gateway Expert Advisor</span>
             </div>
-            <span className="badge badge-success text-[10px] uppercase font-mono">v3.05 Master</span>
+            <span className="badge badge-success text-[10px] uppercase font-mono">v2.50 Ready</span>
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed font-sans">
-            Production-grade MQL5 Expert Advisor with server-authoritative trade execution, automated broker filling mode detection, real-time position reporting, dynamic SL/TP modification, and trailing stop control.
+            Ready-to-compile, pre-made MQL5 Expert Advisor located in the <code className="text-indigo-300 font-mono text-[11px] bg-slate-950 px-1 py-0.5 rounded border border-indigo-500/30">ea/</code> and <code className="text-indigo-300 font-mono text-[11px] bg-slate-950 px-1 py-0.5 rounded border border-indigo-500/30">gateway/</code> folders. Connects MetaTrader 5 directly to the ScalarAI platform with zero extra downloads or bridges.
           </p>
 
           <div className="flex flex-col gap-2.5">
             {/* Primary Download Button */}
             <a
               href={downloadUrl}
-              className="btn btn-primary w-full py-3 shadow-md"
+              download="ScalarAI_Gateway_EA.mq5"
+              className="btn btn-primary w-full py-3 shadow-md flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              <span className="font-semibold">Download ScalarAI_MultiAsset_EA.mq5</span>
+              <span className="font-semibold">Download ScalarAI_Gateway_EA.mq5</span>
             </a>
 
             {/* Quick Actions Grid */}
@@ -131,17 +124,17 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="btn btn-secondary w-full py-2.5 text-xs text-indigo-300 hover:text-white"
+                className="btn btn-secondary w-full py-2.5 text-xs text-indigo-300 hover:text-white flex items-center justify-center gap-1.5"
               >
                 {copiedCode ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied Code!</span>
+                    <span className="text-emerald-400">Copied!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Code</span>
+                    <span>Copy Source</span>
                   </>
                 )}
               </button>
@@ -149,7 +142,7 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               <button
                 type="button"
                 onClick={handleOpenCodeModal}
-                className="btn btn-secondary w-full py-2.5 text-xs text-slate-300 hover:text-white"
+                className="btn btn-secondary w-full py-2.5 text-xs text-slate-300 hover:text-white flex items-center justify-center gap-1.5"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>View Source</span>
@@ -165,141 +158,100 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               {copiedUrl ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-medium">Copied MT5 WebRequest URL!</span>
+                  <span className="text-emerald-400 font-medium">Copied WebRequest URL!</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Copy WebRequest URL for MT5 Options</span>
+                  <span>Copy WebRequest URL for MT5</span>
                 </>
-              )}
-            </button>
-
-            {/* Installers Grid */}
-            <div className="grid grid-cols-2 gap-2">
-              <a
-                href={installScriptUrl}
-                className="btn btn-secondary w-full py-2.5 text-xs text-amber-300 hover:text-amber-200 border-amber-500/30 hover:border-amber-400/50"
-              >
-                <FileCode className="w-3.5 h-3.5 text-amber-400" />
-                <span>Windows .BAT</span>
-              </a>
-
-              <a
-                href={installPsUrl}
-                className="btn btn-secondary w-full py-2.5 text-xs text-sky-300 hover:text-sky-200 border-sky-500/30 hover:border-sky-400/50"
-              >
-                <FileCode className="w-3.5 h-3.5 text-sky-400" />
-                <span>PowerShell .PS1</span>
-              </a>
-            </div>
-
-            {/* Restore Master EA Button */}
-            <button
-              type="button"
-              onClick={handleResetMasterEa}
-              disabled={resetting}
-              className="btn btn-secondary w-full py-2 text-[11px] text-slate-400 hover:text-rose-300 border-slate-700/60 hover:border-rose-500/30 flex items-center justify-center gap-1.5"
-            >
-              {resetSuccess ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span className="text-emerald-400">Master EA Restored to Production Standard!</span>
-                </>
-              ) : resetting ? (
-                <span>Resetting EA Template...</span>
-              ) : (
-                <span>Reset EA to Official Master Code</span>
               )}
             </button>
           </div>
 
-          <div className="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 space-y-1">
+          <div className="text-[11px] text-slate-400 bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
             <div className="flex items-center gap-1.5 text-indigo-400 font-semibold">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Safe MT5 Architecture:</span>
+              <span>Full-Featured Gateway EA Capabilities:</span>
             </div>
-            <div>• Zero chart freezes: Non-blocking throttled telemetry (1/sec max)</div>
-            <div>• Auto-detected broker filling mode (IOC / Return / FOK)</div>
-            <div>• Bidirectional MT5 position sync & server-authoritative SL/TP control</div>
+            <div>• Real-time tick &amp; OHLCV candle streaming straight into SQLite database</div>
+            <div>• Remote command polling &amp; instant execution (BUY, SELL, CLOSE, MODIFY)</div>
+            <div>• Account telemetry sync: Balance, equity, margin, leverage, broker details</div>
+            <div>• Dynamic server-side trailing stop and multi-asset position management</div>
+            <div>• Backtesting support: Works in MetaTrader 5 Strategy Tester with server sync</div>
           </div>
         </div>
 
-        {/* MT5 Chart Visuals Template (.tpl) Card */}
+        {/* 2. Gateway Status Card */}
+        <div className="card-panel flex flex-col space-y-4">
+          <div className="card-panel-header">
+            <div className="card-panel-title flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-emerald-400" />
+              <span>EA Gateway Connection Monitor</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleVerifyGateway}
+              disabled={verifyingGateway}
+              className="btn btn-secondary btn-sm flex items-center gap-1 text-[11px]"
+            >
+              <RefreshCw className={`w-3 h-3 ${verifyingGateway ? "animate-spin" : ""}`} />
+              <span>Probe</span>
+            </button>
+          </div>
+
+          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2 text-xs font-mono">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Gateway Status:</span>
+              <span className={`font-bold flex items-center gap-1.5 ${isBridgeConnected || gatewayStatus?.isEaConnected ? "text-emerald-400" : "text-amber-400"}`}>
+                {isBridgeConnected || gatewayStatus?.isEaConnected ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>EA Connected &amp; Streaming</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Ready — Awaiting EA</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-slate-400">Target Server:</span>
+              <span className="text-indigo-300 truncate max-w-[200px]">{effectiveUrl}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-slate-400">Active Instrument:</span>
+              <span className="text-white font-bold">{activeSymbol || "Step Index"}</span>
+            </div>
+            {gatewayStatus?.account && (
+              <div className="flex justify-between items-center text-slate-300 border-t border-slate-800/80 pt-1.5">
+                <span className="text-slate-400">Account #{gatewayStatus.account.login}:</span>
+                <span className="text-cyan-300 font-bold">${Number(gatewayStatus.account.balance).toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3. MT5 Chart Visuals Template (.tpl) Card */}
         <div className="card-panel flex flex-col space-y-4">
           <div className="card-panel-header">
             <div className="card-panel-title">
               <Layers className="w-4 h-4 text-emerald-400" />
-              <span>MT5 Chart Template (.tpl)</span>
+              <span>MT5 Dark Terminal Template (.tpl)</span>
             </div>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed font-sans">
-            Apply our dark-theme chart template directly. Disables grid clutter, sets solid dark background, and configures bright bullish & bearish candles matching this platform.
+            Clean dark-theme chart template matching this platform. Disables grid clutter and sets vivid bullish &amp; bearish candles.
           </p>
           <a
             href="/api/ea/template"
-            className="btn btn-success w-full py-3"
+            className="btn btn-success w-full py-2.5 flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span>Download step_index_chart.tpl</span>
           </a>
-        </div>
-
-        {/* MQL5 Generator Source (.ts) Card */}
-        <div className="card-panel flex flex-col space-y-4">
-          <div className="card-panel-header">
-            <div className="card-panel-title">
-              <Code2 className="w-4 h-4 text-cyan-400" />
-              <span>MQL5 Generator Engine</span>
-            </div>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed font-sans">
-            Permanent standalone TypeScript generator file (<code className="text-cyan-300 font-mono text-[11px] bg-slate-900 px-1 py-0.5 rounded">mql5_generator.ts</code>). Preserved and backed up for local setup on any workstation.
-          </p>
-          <a
-            href="/api/ea/generator-source"
-            className="btn btn-secondary w-full py-3 text-cyan-300 hover:text-white"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download mql5_generator.ts</span>
-          </a>
-        </div>
-
-        {/* 2. Node.js MT5 Desktop Bridge Card */}
-        <div className="card-panel flex flex-col space-y-4">
-          <div className="card-panel-header">
-            <div className="card-panel-title">
-              <Terminal className="w-4 h-4 text-indigo-400" />
-              <span>Node.js Bridge 2 (MCP Enabled)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${isBridgeConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
-              <span className={`badge ${isBridgeConnected ? "badge-success" : "badge-danger"}`}>
-                {isBridgeConnected ? "Connected" : "Offline"}
-              </span>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-300 leading-relaxed font-sans">
-            Production Node.js Bridge 2 with native <strong>Model Context Protocol (MCP)</strong> support. Allows any external AI outside this website (Claude Desktop, Cursor, Windsurf, or custom LLM bots) to monitor positions, place trades, and control MT5 directly.
-          </p>
-
-          <button
-            type="button"
-            onClick={onDownloadNodejsBridge}
-            className="btn btn-secondary w-full py-3 text-indigo-300 hover:text-white"
-          >
-            <Download className="w-4 h-4 text-indigo-300" />
-            <span>Download Node.js Bridge 2 + MCP Config</span>
-          </button>
-
-          <div className="text-[10px] text-slate-400 font-mono space-y-1 bg-slate-900/90 p-3 rounded-xl border border-slate-700/60">
-            <div className="text-indigo-400 font-bold uppercase mb-1">Bridge 2 Features:</div>
-            <div>• Model Context Protocol (MCP 2024-11-05)</div>
-            <div>• Claude Desktop & Cursor auto-config included</div>
-            <div>• 15 tools: place, close, modify, quote, candles</div>
-            <div>• Zero external dependencies required (Node &gt;= 18)</div>
-          </div>
         </div>
       </div>
 
@@ -308,11 +260,12 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
         <div className="card-panel p-6 space-y-6">
           <div className="card-panel-header">
             <div>
-              <h3 className="card-panel-title text-base">
-                MetaTrader 5 Installation & Quick Start
+              <h3 className="card-panel-title text-base flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-indigo-400" />
+                <span>MetaTrader 5 Installation &amp; Setup Guide</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Follow these 3 simple steps to attach the EA and stream live market data.
+                Attach the EA in 3 simple steps to execute real trades and sync live market data.
               </p>
             </div>
           </div>
@@ -325,20 +278,17 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               </span>
               <div className="space-y-1.5 flex-1">
                 <h4 className="font-bold text-white text-xs uppercase tracking-wider font-mono">
-                  Place MQ5 File in MetaTrader 5
+                  Save MQ5 File into MetaTrader 5
                 </h4>
                 <p className="text-slate-300 text-xs leading-relaxed">
-                  Choose your preferred installation method:
+                  Click the <strong className="text-indigo-300">Download ScalarAI_Gateway_EA.mq5</strong> button above. Then:
                 </p>
                 <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800 space-y-2 text-[11px]">
                   <div>
-                    <strong className="text-indigo-300">Method A (1-Click):</strong> Download and run the <strong className="text-amber-300">Windows 1-Click Installer (.bat)</strong>. It places the EA directly into your MT5 directory.
+                    <strong className="text-white">Option A (Standard):</strong> In MetaTrader 5, click <strong className="text-indigo-300">File &gt; Open Data Folder</strong>. Open the <strong className="text-white font-mono">MQL5/Experts/</strong> directory and copy <strong className="text-emerald-300 font-mono">ScalarAI_Gateway_EA.mq5</strong> there.
                   </div>
                   <div>
-                    <strong className="text-indigo-300">Method B (MetaEditor):</strong> Click <strong className="text-indigo-300">Copy Code</strong>, open MetaEditor (press <kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">F4</kbd> in MT5), click <strong className="text-white">New &gt; Expert Advisor</strong>, paste the code, and press <kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">F7</kbd> to compile!
-                  </div>
-                  <div>
-                    <strong className="text-indigo-300">Method C (Manual):</strong> In MT5 select <strong className="text-white">File &gt; Open Data Folder</strong>. Place the downloaded <strong className="text-white font-mono">ScalarAI_MultiAsset_EA.mq5</strong> in <strong className="text-indigo-300 font-mono">MQL5/Experts/</strong>.
+                    <strong className="text-white">Option B (MetaEditor):</strong> Press <kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">F4</kbd> in MT5 to open MetaEditor. Click <strong className="text-white">New &gt; Expert Advisor</strong>, paste the code from <strong className="text-indigo-300">Copy Source</strong>, and press <kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">F7</kbd> to compile.
                   </div>
                 </div>
               </div>
@@ -349,71 +299,34 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               <span className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 font-mono">
                 2
               </span>
-              <div className="space-y-2 flex-1">
+              <div className="space-y-1.5 flex-1">
                 <h4 className="font-bold text-white text-xs uppercase tracking-wider font-mono">
-                  Allow WebRequest Permissions
+                  Allow WebRequest in MT5
                 </h4>
                 <p className="text-slate-300 text-xs leading-relaxed">
-                  In MT5, navigate to <strong className="text-white">Tools &gt; Options &gt; Expert Advisors</strong>. Check <strong className="text-indigo-300 font-semibold">"Allow WebRequest for listed URL"</strong> and add this exact URL:
+                  In MetaTrader 5:
                 </p>
-
-                <div className="bg-slate-900/90 p-3 rounded-xl border border-indigo-500/30 space-y-2">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">
-                    Required Allowed WebRequest URL:
+                <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800 space-y-2 text-[11px]">
+                  <div>
+                    1. Go to <strong className="text-white">Tools &gt; Options</strong> (or press <kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">Ctrl+O</kbd>).
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <input
-                      type="text"
-                      value={appEndpoint || "http://127.0.0.1:3000"}
-                      onChange={(e) => onSetEndpoint(e.target.value)}
-                      className="input-control flex-1 text-indigo-300 font-mono text-xs"
-                      placeholder="e.g. http://127.0.0.1:3000"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
+                  <div>
+                    2. Select the <strong className="text-indigo-300 font-semibold">Expert Advisors</strong> tab.
+                  </div>
+                  <div>
+                    3. Check the box <strong className="text-emerald-300">"Allow WebRequest for listed URL"</strong>.
+                  </div>
+                  <div>
+                    4. Add this platform URL:
+                    <div className="flex items-center gap-2 mt-1 bg-slate-950 p-2 rounded border border-slate-700">
+                      <code className="text-cyan-300 font-mono text-[11px] truncate flex-1">{effectiveUrl}</code>
                       <button
-                        type="button"
-                        onClick={() => onSaveEndpoint(appEndpoint)}
-                        className="btn btn-primary btn-sm"
+                        onClick={handleCopyUrl}
+                        className="btn btn-secondary btn-sm text-[10px] py-1 px-2"
                       >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onCopyLink(appEndpoint || effectiveUrl)}
-                        className="btn btn-secondary btn-sm p-2"
-                        title="Copy URL"
-                      >
-                        {copiedLink ? (
-                          <Check className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-slate-400" />
-                        )}
+                        {copiedUrl ? "Copied" : "Copy"}
                       </button>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-[10px] text-left pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSetEndpoint("http://127.0.0.1:3000");
-                        onSaveEndpoint("http://127.0.0.1:3000");
-                      }}
-                      className="text-slate-400 hover:text-indigo-300 underline decoration-dotted transition-colors cursor-pointer"
-                    >
-                      Reset to localhost default
-                    </button>
-                    <span className="text-slate-600 select-none">|</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const detected = getAppBaseUrl();
-                        onSetEndpoint(detected);
-                        onSaveEndpoint(detected);
-                      }}
-                      className="text-slate-400 hover:text-indigo-300 underline decoration-dotted transition-colors cursor-pointer"
-                    >
-                      Detect live web app origin ({getAppBaseUrl()})
-                    </button>
                   </div>
                 </div>
               </div>
@@ -426,84 +339,63 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
               </span>
               <div className="space-y-1.5 flex-1">
                 <h4 className="font-bold text-white text-xs uppercase tracking-wider font-mono">
-                  Attach EA and Enable Algorithmic Trading
+                  Attach EA to Any Chart
                 </h4>
-                <p className="text-slate-300 text-xs leading-relaxed">
-                  In MT5:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300 pl-1">
-                  <li>Click the <strong className="text-emerald-400">"Algo Trading"</strong> button on the MT5 top toolbar so it shows a green play icon.</li>
-                  <li>In the Navigator panel under <strong className="text-white">Expert Advisors</strong>, drag <strong className="text-indigo-300 font-mono">ScalarAI_MultiAsset_EA</strong> onto any <strong className="text-emerald-400 font-semibold">{activeSymbol || "Step Index"}</strong> chart.</li>
-                  <li>In the EA settings popup, verify <strong className="text-white">"Allow Algorithmic Trading"</strong> is checked. Click OK!</li>
-                </ul>
+                <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800 space-y-2 text-[11px]">
+                  <div>
+                    1. Open any chart (e.g. <strong className="text-white">Step Index</strong>, <strong className="text-white">Boom 1000</strong>, <strong className="text-white">Volatility 75</strong>, <strong className="text-white">EURUSD</strong>).
+                  </div>
+                  <div>
+                    2. In the MT5 Navigator panel (<kbd className="px-1 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono">Ctrl+N</kbd>), expand <strong className="text-indigo-300">Expert Advisors</strong> and drag <strong className="text-emerald-300 font-mono">ScalarAI_Gateway_EA</strong> onto the chart.
+                  </div>
+                  <div>
+                    3. In the <strong className="text-white">Common</strong> tab, ensure <strong className="text-emerald-300">"Allow Algo Trading"</strong> is checked.
+                  </div>
+                  <div>
+                    4. Click <strong className="text-white">OK</strong> and ensure the MT5 top toolbar button <strong className="text-white">"Algo Trading"</strong> is green.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Code Viewer Modal */}
+      {/* Code Modal */}
       {isCodeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Code2 className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-semibold text-white font-mono">
-                  ScalarAI_MultiAsset_EA.mq5 Source Code
-                </h3>
-                <span className="badge badge-success text-[10px]">v3.02</span>
+                <Terminal className="w-4 h-4 text-indigo-400" />
+                <span className="font-bold text-white text-sm">ScalarAI_Gateway_EA.mq5 (Source Code)</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  type="button"
                   onClick={handleCopyCode}
-                  className="btn btn-secondary btn-sm flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white"
+                  className="btn btn-secondary btn-sm text-xs flex items-center gap-1"
                 >
-                  {copiedCode ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy All</span>
-                    </>
-                  )}
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedCode ? "Copied" : "Copy Source"}</span>
                 </button>
                 <button
-                  type="button"
                   onClick={() => setIsCodeModalOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-auto p-4 bg-slate-950 font-mono text-[11px] text-slate-300 leading-relaxed select-text">
+            <div className="flex-1 overflow-auto p-4 bg-slate-950">
               {codeLoading ? (
-                <div className="flex items-center justify-center h-48 text-slate-400">
-                  <span>Generating MQL5 code...</span>
+                <div className="flex items-center justify-center h-48 text-slate-400 text-xs font-mono">
+                  Loading EA source code...
                 </div>
               ) : (
-                <pre className="whitespace-pre overflow-x-auto">{eaCode}</pre>
+                <pre className="text-[11px] font-mono text-slate-300 leading-relaxed whitespace-pre">
+                  {eaCode}
+                </pre>
               )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-800 bg-slate-950/70 text-xs text-slate-400">
-              <span>Ready for MetaEditor 5 (press F4 in MT5 &gt; New &gt; Paste &gt; F7 Compile)</span>
-              <button
-                type="button"
-                onClick={() => setIsCodeModalOpen(false)}
-                className="btn btn-secondary btn-sm"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
@@ -511,3 +403,5 @@ export const DownloadsCenter: React.FC<DownloadsCenterProps> = ({
     </div>
   );
 };
+
+export default DownloadsCenter;

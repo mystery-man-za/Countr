@@ -127,11 +127,11 @@ export const Header: React.FC<HeaderProps> = ({
 
           <span className="telemetry-divider" aria-hidden="true">·</span>
 
-          {/* Desktop Bridge Status Indicator */}
+          {/* Gateway Status Indicator */}
           <div className="flex items-center gap-1.5">
-            <span className={`h-2 w-2 rounded-full ${isBridgeConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
-            <span className={`font-semibold uppercase text-[10px] ${isBridgeConnected ? "text-emerald-400" : "text-rose-400"}`}>
-              {isBridgeConnected ? "BRIDGE ON" : "BRIDGE OFF"}
+            <span className={`h-2 w-2 rounded-full ${isBridgeConnected || connection.isEaConnected ? "bg-emerald-500 animate-pulse" : "bg-cyan-500"}`}></span>
+            <span className={`font-semibold uppercase text-[10px] ${isBridgeConnected || connection.isEaConnected ? "text-emerald-400" : "text-cyan-300"}`}>
+              {isBridgeConnected || connection.isEaConnected ? "GATEWAY LIVE" : "GATEWAY READY"}
             </span>
           </div>
         </div>

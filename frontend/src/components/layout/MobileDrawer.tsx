@@ -10,6 +10,8 @@ import {
   WifiOff,
   Sliders,
   Cpu,
+  Wallet,
+  FlaskConical,
 } from "lucide-react";
 import type { TradeConfig, SystemLog, EAConnectionDetails } from "../../types";
 
@@ -157,11 +159,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         <div className="card-panel flex flex-col gap-2">
           <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono mb-1">Navigation</span>
           {[
-            { id: "home", label: "Live Trading", icon: Home, badge: `$${currentPrice.toFixed(1)}` },
-            { id: "risk", label: "Risk & Strategy", icon: Sliders, badge: config.selectedStrategy },
-            { id: "bridge", label: "MCP Bridge 2", icon: Cpu, badge: "AI Ready" },
-            { id: "downloads", label: "Downloads Center", icon: Download },
-            { id: "logs", label: "System Logs", icon: Terminal, badge: `${logs.length}` },
+            { id: "home", label: "Trading Terminal", icon: Home, badge: `$${currentPrice.toFixed(1)}` },
+            { id: "portfolio", label: "Portfolio & Deals", icon: Wallet },
+            { id: "research", label: "Research & Backtest", icon: FlaskConical, badge: "Lab" },
+            { id: "gateway", label: "MT5 EA Gateway", icon: Cpu, badge: isBridgeConnected ? "Live" : "Ready" },
+            { id: "risk", label: "Bot & Risk Controls", icon: Sliders, badge: config.selectedStrategy },
+            { id: "downloads", label: "Downloads (EA v2.50)", icon: Download },
+            { id: "logs", label: "System Logs & DB", icon: Terminal, badge: `${logs.length}` },
             { id: "settings", label: "Settings", icon: Settings },
           ].map((tab) => {
             const IconComponent = tab.icon;

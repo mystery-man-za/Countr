@@ -716,6 +716,33 @@ export class ScalarAiDb {
     return this.db.prepare(`SELECT * FROM strategy_symbol_performance WHERE strategy_id = ?`).all(strategyId) as StrategySymbolPerformanceRow[];
   }
 
+  // Database instance accessor
+  getDbInstance(): InstanceType<typeof Database> {
+    return this.db;
+  }
+
+  // Closed deals ledger
+  insertDeal(deal: { dealTicket: string; orderTicket?: string; symbol: string; type: string; volume: number; price: number; profit: number; closeTime: string }): void {
+    this.db.prepare(
+      `INSERT OR REPLACE INTO deals (deal_ticket, order_ticket, symbol, type, volume, price, profit, close_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(deal.dealTicket, deal.orderTicket ?? null, deal.symbol, deal.type, deal.volume, deal.price, deal.profit, deal.closeTime);
+  }
+
+  getDeals(limit = 100): Array<{ id: number; dealTicket: string; orderTicket?: string; symbol: string; type: string; volume: number; price: number; profit: number; closeTime: string }> {
+    const rows = this.db.prepare(`SELECT * FROM deals ORDER BY close_time DESC LIMIT ?`).all(limit) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      dealTicket: r.deal_ticket,
+      orderTicket: r.order_ticket,
+      symbol: r.symbol,
+      type: r.type,
+      volume: r.volume,
+      price: r.price,
+      profit: r.profit,
+      closeTime: r.close_time,
+    }));
+  }
+
   // Migrations
   migrate(): void {
     // Schema managed externally via schema.sql

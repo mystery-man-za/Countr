@@ -39,4 +39,7 @@ export { WebRequestTest } from "./settings/WebRequestTest";
 // Downloads & Logs
 export { DownloadsCenter } from "./downloads/DownloadsCenter";
 export { LogsViewer } from "./logs/LogsViewer";
-export { BridgeConsole } from "./bridge/BridgeConsole";
+export { GatewayConsole } from "./gateway/GatewayConsole";
+export { PortfolioView } from "./portfolio/PortfolioView";
+export { ResearchLab } from "./research/ResearchLab";
+export { GatewayConsole as BridgeConsole } from "./gateway/GatewayConsole";
