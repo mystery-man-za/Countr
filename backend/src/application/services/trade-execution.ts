@@ -9,6 +9,7 @@ export interface AppCallbacks {
   addLog: (source: "SERVER" | "EA" | "AI", level: "INFO" | "SUCCESS" | "WARNING" | "ERROR", message: string) => void;
   broadcastToDashboards: (payload: unknown) => void;
   broadcastTradesUpdate: () => void;
+  db: typeof scalarAiDb;
 }
 
 export interface TradeState {
@@ -200,7 +201,7 @@ export async function openSimulatedPosition(
   state.tradesList.unshift(newTrade);
   state.nextTicket.value += 1;
   try {
-    scalarAiDb.insertTrade(newTrade);
+    callbacks.db.insertTrade(newTrade);
   } catch {
     // quiet persistence
   }
@@ -248,7 +249,7 @@ export function closeSimulatedPosition(state: TradeState, trade: TradeRecord, re
   trade.profit = finalProfit;
   trade.reason = reason;
   try {
-    scalarAiDb.updateTrade(trade.id, {
+    callbacks.db.updateTrade(trade.id, {
       closePrice: trade.closePrice,
       profit: trade.profit,
       status: trade.status,

@@ -11,8 +11,8 @@ import { normalizeIp } from "../../shared/utils/ip";
 import { tradingMachine, bridgeMachine, calibrationMachine, TradingMachineService, BridgeMachineService, CalibrationMachineService } from "./trading-machine";
 import { ObservationsService } from "./observations";
 
-export class AppStore implements AppStoreReadOnly {
-  private db: (typeof scalarAiDb) = scalarAiDb;
+export class AppStore implements AppStoreReadOnly, AppCallbacks {
+  public db: typeof scalarAiDb = scalarAiDb;
   private tradeConfig: TradeConfig;
   private tradesList: TradeRecord[];
   private systemLogs: SystemLog[];
