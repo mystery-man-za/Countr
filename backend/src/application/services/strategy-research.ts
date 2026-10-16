@@ -1,4 +1,4 @@
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { Tick, AiKnowledgeBase } from "../../shared/types";
 import { buildContext, evaluateStrategy, evaluateStrategyBacktest, StrategyContext } from "./strategy";
 

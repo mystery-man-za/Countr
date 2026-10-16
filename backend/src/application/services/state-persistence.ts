@@ -6,7 +6,7 @@ import {
   AiSynthesizedStrategy,
   EAConnectionDetails,
 } from "../../shared/types";
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "./defaults";
 
 export function loadStateFromDb() {

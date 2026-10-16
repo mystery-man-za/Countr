@@ -1,6 +1,6 @@
 import { TradeConfig, TradeRecord, SystemLog, AiKnowledgeBase, AiSynthesizedStrategy, McpContext, EAConnectionDetails, Tick, FullStatusPayload, UpdateMarketPayload, BridgeOrder, AppStoreReadOnly, TradingState, BridgeState, CalibrationState, Observation, ObservationFilters, ObservationInsights, SymbolStateEntry, StrategyMode, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../shared/types";
 import { SymbolStates, createSymbolStates, createBlankSymbolState, getSymbolState, updateMarket as updateMarketState } from "./market-ingestion";
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { persistAiKnowledge, persistAiStrategy, persistSettings, persistEaConnection, loadStateFromDb, persistLog } from "./state-persistence";
 import { evaluateSimulatedStrategy, openSimulatedPosition, closeSimulatedPosition, AppCallbacks, TradeState } from "./trade-execution";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy, createSystemLog } from "./defaults";

@@ -1,4 +1,4 @@
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { ObservationRow } from "../../shared/types";
 
 export interface Observation {

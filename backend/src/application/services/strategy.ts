@@ -1,5 +1,5 @@
 import { StrategyMode, TradeConfig, Tick, AiKnowledgeBase, AiSynthesizedStrategy, StrategyCondition } from "../../shared/types";
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { getDefaultTradeConfig } from "./defaults";
 import { BacktestCandle, BacktestEngine, BacktestResult as CandleBacktestResult } from "./strategy-backtest";
 import { getClosePrices, calculateEMA, calculateRSI, calculateATR, calculateBollingerBands } from "../../domain/indicators";

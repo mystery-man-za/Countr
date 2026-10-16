@@ -1,7 +1,7 @@
 import { Request, Response, Application } from "express";
 import { AppStore } from "../../../application/services/app-store";
 import { GatewayManager } from "../../../gateway/gateway-manager";
-import { scalarAiDb } from "../../../infrastructure/db";
+import { scalarAiDb } from "../../../composition";
 import {
   sma,
   ema,

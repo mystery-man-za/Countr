@@ -25,7 +25,7 @@ import { AppStore } from "../../application/services/app-store";
 import { closeSimulatedPosition } from "../../application/services/trade-execution";
 import { TradeRecord } from "../../shared/types";
 import { getSymbolState } from "../../application/services/market-ingestion";
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { rateLimit } from "./middleware/rateLimit";
 
 dotenv.config();

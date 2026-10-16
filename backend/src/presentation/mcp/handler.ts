@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { McpContext, StrategyMode, TradeRecord, SystemLog } from "../../shared/types";
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { evaluateStrategyBacktest } from "../../application/services/strategy";
 import { BacktestEngine } from "../../application/services/strategy-backtest";
 import { updateKnowledgeBaseFromTelemetry, formatKnowledgeBase } from "../../application/services/knowledge";

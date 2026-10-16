@@ -1,4 +1,4 @@
-import { scalarAiDb } from "../../infrastructure/db";
+import { scalarAiDb } from "../../composition";
 import { AiKnowledgeBase } from "../../shared/types";
 
 export interface KnowledgeUpdateResult {
