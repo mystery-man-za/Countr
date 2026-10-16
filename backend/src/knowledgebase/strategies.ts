@@ -1,4 +1,4 @@
-import { StrategyMode, AiSynthesizedStrategy, TradeConfig } from "../../shared/types";
+import { StrategyMode, AiSynthesizedStrategy, TradeConfig } from "../shared/types";
 
 export interface StrategyTemplate {
   id: string;

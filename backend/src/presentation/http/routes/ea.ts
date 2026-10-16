@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction, Application } from "express";
 import path from "path";
 import fs from "fs";
-import { generateMql5Code } from "../../../application/services/ea-generator";
-import { saveCustomEaTemplate, resetCustomEaTemplate, isCustomTemplateActive, getCustomTemplateStatus } from "../../../application/services/ea-remote-update";
+import { generateMql5Code } from "../../../tools/bot/ea-generator";
+import { saveCustomEaTemplate, resetCustomEaTemplate, isCustomTemplateActive, getCustomTemplateStatus } from "../../../tools/bot/ea-remote-update";
 import { TradeConfig, UpdateMarketPayload, FullStatusPayload, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../../shared/types";
 import { requireApiKey } from "../middleware/auth";
 

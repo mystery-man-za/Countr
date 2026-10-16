@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateEMA, calculateRSI, calculateBollingerBands, calculateATR } from "../backend/src/domain/indicators";
+import { calculateEMA, calculateRSI, calculateBollingerBands, calculateATR } from "../backend/src/knowledgebase/indicators";
 
 describe("domain/indicators (pure)", () => {
   it("EMA", () => {

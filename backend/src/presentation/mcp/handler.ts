@@ -6,7 +6,7 @@ import { BacktestEngine } from "../../application/services/strategy-backtest";
 import { updateKnowledgeBaseFromTelemetry, formatKnowledgeBase } from "../../application/services/knowledge";
 import { analyzeMarket, analyzeStrategyPerformance, suggestStrategyOptimizations, recommendStrategyForConditions } from "../../application/services/strategy-research";
 import { parseTimestamp, parseLimit } from "../../shared/utils/time";
-import { STRATEGY_TEMPLATES, createStrategyFromTemplate } from "../../application/services/strategy-templates";
+import { STRATEGY_TEMPLATES, createStrategyFromTemplate } from "../../knowledgebase/strategies";
 
 export interface McpTool {
   name: string;

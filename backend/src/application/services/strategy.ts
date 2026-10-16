@@ -2,7 +2,7 @@ import { StrategyMode, TradeConfig, Tick, AiKnowledgeBase, AiSynthesizedStrategy
 import { scalarAiDb } from "../../composition";
 import { getDefaultTradeConfig } from "./defaults";
 import { BacktestCandle, BacktestEngine, BacktestResult as CandleBacktestResult } from "./strategy-backtest";
-import { getClosePrices, calculateEMA, calculateRSI, calculateATR, calculateBollingerBands } from "../../domain/indicators";
+import { getClosePrices, calculateEMA, calculateRSI, calculateATR, calculateBollingerBands } from "../../knowledgebase/indicators";
 
 export type { StrategyMode, TradeConfig, Tick, AiKnowledgeBase, AiSynthesizedStrategy, StrategyCondition } from "../../shared/types";
 
@@ -353,4 +353,4 @@ export function evaluateStrategyBacktestWithCandles(
   };
   return engine.runBacktest(mode as StrategyMode, candles, fullConfig);
 }
-export * from "../../domain/indicators";
+export * from "../../knowledgebase/indicators";
