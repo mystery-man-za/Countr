@@ -6,7 +6,6 @@ import {
   sma,
   ema,
   rsi,
-  atr,
   bollinger,
   macd,
   scanCandlePatterns,
@@ -137,14 +136,14 @@ export function registerCotradeRoutes(
       ...s,
       bid: Number((currPrice - s.spread / 2).toFixed(s.digits)),
       ask: Number((currPrice + s.spread / 2).toFixed(s.digits)),
-      isActive: s.symbol.toLowerCase() === (store.getActiveSymbol() || "Step Index").toLowerCase(),
+      isActive: s.symbol === (store.getActiveSymbol() || "Step Index"),
     }));
     res.json({ count: list.length, symbols: list });
   });
 
   app.get("/api/symbol/:symbol", (req: Request, res: Response) => {
     const symName = req.params.symbol;
-    const found = DEFAULT_SYMBOLS.find((s) => s.symbol.toLowerCase() === symName.toLowerCase()) || {
+    const found = DEFAULT_SYMBOLS.find((s) => s.symbol === symName) || {
       symbol: symName,
       category: "Custom",
       digits: 2,

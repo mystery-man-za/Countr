@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocket } from "ws";
 import dotenv from "dotenv";
 import { corsMiddleware } from "./middleware/cors";
 import { loggerMiddleware } from "./middleware/logger";
@@ -16,9 +16,9 @@ import { createDashboardServer } from "./real-time/dashboard";
 import { AppStore } from "../application/services/app-store";
 import { closeSimulatedPosition } from "../application/services/trade-execution";
 import { TradeRecord } from "../../shared/types";
-import { getSymbolState } from "../application/services/market-ingestion";
 import { scalarAiDb } from "../composition";
 import { rateLimit } from "./middleware/rateLimit";
+import { switchActiveSymbol } from "../application/commands/control.commands";
 
 dotenv.config();
 
@@ -69,7 +69,7 @@ async function startServer() {
     app,
     store.getFullStatusPayload.bind(store),
     (symbol: string) => {
-      store.switchSymbol(symbol);
+      switchActiveSymbol(store, symbol);
     },
     store.getAndClearPendingOrders.bind(store),
     cfg.mcpApiKey

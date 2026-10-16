@@ -6,7 +6,7 @@ export interface StatusSyncOptions {
 }
 
 export function useAppStatus(options: StatusSyncOptions) {
-  const { onStatus, onInit } = options;
+  const { onStatus, onInit: _onInit } = options;
 
   const fetchStatus = useCallback(async () => {
     try {

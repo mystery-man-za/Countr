@@ -1,5 +1,3 @@
-import React from "react";
-import { Copy, Check } from "lucide-react";
 import { StrategyMode } from "../../types";
 
 export interface WebRequestTestProps {

@@ -82,7 +82,7 @@ export function buildContext(ticks: Tick[], knowledge: AiKnowledgeBase, strategy
 }
 
 export function evaluateTrendFollowing(ctx: StrategyContext, config: TradeConfig): TradeSignal {
-  const { rsi, fastEma, slowEma, atr, velocity } = ctx;
+  const { rsi, fastEma, slowEma, velocity } = ctx;
   
   const emaSeparation = Math.abs(fastEma - slowEma);
   if (emaSeparation < 0.00001 && Math.abs(velocity) < 0.0001) {
@@ -148,7 +148,6 @@ export function evaluateMeanReversion(ctx: StrategyContext, config: TradeConfig)
 }
 
 export function evaluateAiAdaptive(ctx: StrategyContext, config: TradeConfig): TradeSignal {
-  const telemetry = ctx.strategy.rules?.telemetry || {};
   const minSpeedFilter = ctx.strategy.rules?.minVelocityFilter ?? 0.15;
   const maxAllowedPositionDivergence = ctx.strategy.rules?.maxAllowedPositionDivergence ?? 2.0;
   const useEmaConfirmation = ctx.strategy.rules?.useEmaConfirmation ?? true;

@@ -1,7 +1,7 @@
 import React from "react";
 import { RefreshCw } from "lucide-react";
 import type { StrategyMode } from "../../types";
-import type { CandleData, ChartData } from "../../hooks/useChartData";
+import type { ChartData } from "../../hooks/useChartData";
 import { CandlestickChart } from "../charts/CandlestickChart";
 
 export interface PriceChartProps {

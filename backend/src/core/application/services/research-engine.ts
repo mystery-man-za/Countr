@@ -147,7 +147,6 @@ export function scanCandlePatterns(bars: Bar[]): PatternMatch[] {
   for (let i = 2; i < bars.length; i++) {
     const b = bars[i];
     const prev = bars[i - 1];
-    const prev2 = bars[i - 2];
 
     const body = Math.abs(b.close - b.open);
     const range = b.high - b.low;

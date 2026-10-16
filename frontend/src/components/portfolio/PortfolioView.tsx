@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Wallet,
-  TrendingUp,
-  TrendingDown,
   ShieldAlert,
   RotateCw,
   Sliders,
-  DollarSign,
-  Activity,
   Layers,
   ArrowUpRight,
   ArrowDownRight,
   X,
-  Check,
-  AlertCircle,
   Clock,
   Sparkles,
 } from "lucide-react";

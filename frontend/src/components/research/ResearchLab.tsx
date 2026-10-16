@@ -4,17 +4,10 @@ import {
   Play,
   RotateCw,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   Search,
   Sliders,
-  CheckCircle2,
-  Activity,
-  Layers,
-  Sparkles,
-  Award,
-  Zap,
-} from "lucide-react";
+  } from "lucide-react";
 
 interface ResearchLabProps {
   activeSymbol: string;
@@ -33,7 +26,7 @@ export const ResearchLab: React.FC<ResearchLabProps> = ({ activeSymbol }) => {
   const [slPoints, setSlPoints] = useState<number>(150);
   const [tpPoints, setTpPoints] = useState<number>(300);
   const [trailingStop, setTrailingStop] = useState<boolean>(true);
-  const [trailingPoints, setTrailingPoints] = useState<number>(100);
+  
 
   const [isRunningBacktest, setIsRunningBacktest] = useState<boolean>(false);
   const [backtestResult, setBacktestResult] = useState<any>(null);
@@ -64,7 +57,7 @@ export const ResearchLab: React.FC<ResearchLabProps> = ({ activeSymbol }) => {
           slPoints,
           tpPoints,
           trailingStop,
-          trailingPoints,
+          trailingPoints: 100,
           initialBalance: 10000,
         }),
       });

@@ -1,8 +1,7 @@
-import { TradeRecord, TradeConfig, AiSynthesizedStrategy, AiKnowledgeBase, Tick, CandleBar, BridgeOrder, EaCommand, EaPosition } from "../../../shared/types";
+import { TradeRecord, TradeConfig, AiSynthesizedStrategy, AiKnowledgeBase, Tick, BridgeOrder, EaCommand, EaPosition } from "../../../shared/types";
 import { SymbolStates, getSymbolState } from "./market-ingestion";
 import { buildContext, evaluateStrategy } from "./strategy";
 import { scalarAiDb } from "../../composition";
-import { createSystemLog } from "./defaults";
 import { WebSocket } from "ws";
 
 export interface AppCallbacks {

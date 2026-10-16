@@ -1,4 +1,4 @@
-import { Home, Sliders, Download, Terminal, Settings } from "lucide-react";
+import { Home } from "lucide-react";
 
 export interface TabDef {
   id: string;

@@ -1,10 +1,11 @@
-import { TradeConfig, TradeRecord, SystemLog, AiKnowledgeBase, AiSynthesizedStrategy, McpContext, EAConnectionDetails, Tick, FullStatusPayload, UpdateMarketPayload, BridgeOrder, AppStoreReadOnly, TradingState, BridgeState, CalibrationState, Observation, ObservationFilters, ObservationInsights, SymbolStateEntry, StrategyMode, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../../shared/types";
+import { TradeConfig, TradeRecord, SystemLog, AiKnowledgeBase, AiSynthesizedStrategy, McpContext,  FullStatusPayload, UpdateMarketPayload, BridgeOrder, AppStoreReadOnly, TradingState, BridgeState, CalibrationState,  ObservationFilters,  SymbolStateEntry, StrategyMode, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../../shared/types";
 import { SymbolStates, createSymbolStates, createBlankSymbolState, getSymbolState, updateMarket as updateMarketState } from "./market-ingestion";
 import { scalarAiDb } from "../../composition";
-import { persistAiKnowledge, persistAiStrategy, persistSettings, persistEaConnection, loadStateFromDb, persistLog } from "./state-persistence";
+import { persistAiKnowledge, persistAiStrategy, persistSettings, loadStateFromDb, persistLog } from "./state-persistence";
 import { evaluateSimulatedStrategy, openSimulatedPosition, closeSimulatedPosition, AppCallbacks, TradeState } from "./trade-execution";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy, createSystemLog } from "./defaults";
-import { BacktestEngine, BacktestCandle } from "./strategy-backtest";
+import { switchActiveSymbol, toggleTrading, resetTradeStats } from "../commands/control.commands";
+import { BacktestEngine } from "./strategy-backtest";
 import { createActor } from "xstate";
 import { WebSocket } from "ws";
 import { normalizeIp } from "../../../shared/utils/ip";
@@ -565,7 +566,10 @@ export class AppStore implements AppStoreReadOnly, AppCallbacks {
       analyzeMarket: () => this.analyzeMarket(),
       synthesizeStrategy: () => Promise.resolve(this.aiSynthesizedStrategy),
       updateSettings: async (params: Partial<TradeConfig>) => Promise.resolve(this.updateSettings(params)),
-      toggleTrading: async (isActive: boolean) => Promise.resolve(this.toggleTrading(isActive)),
+      toggleTrading: async (isActive: boolean) => {
+        toggleTrading(this, isActive);
+        return this.config;
+      },
       placeTrade: async (
         type: "BUY" | "SELL",
         reason?: string,
@@ -574,9 +578,13 @@ export class AppStore implements AppStoreReadOnly, AppCallbacks {
       closeTrade: async (tradeId: string) => this.closeTrade(tradeId),
       closeAllTrades: async (symbol?: string) => this.closeAllTrades(symbol),
       modifyTrade: async (tradeId: string, options: { sl?: number; tp?: number }) => this.modifyTrade(tradeId, options),
-      switchSymbol: (symbol: string) => this.switchSymbol(symbol),
+      switchSymbol: (symbol: string) => {
+        switchActiveSymbol(this, symbol);
+      },
       getSymbols: () => this.getSymbolsList(),
-      resetStats: async () => Promise.resolve(this.resetStats()),
+      resetStats: async () => {
+        resetTradeStats(this);
+      },
       getTradingState: () => this.getTradingState(),
       getBridgeState: () => this.getBridgeState(),
       getCalibrationState: () => this.getCalibrationState(),

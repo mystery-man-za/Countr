@@ -1,5 +1,5 @@
 import React from "react";
-import { Layers, RotateCcw } from "lucide-react";
+import { Layers } from "lucide-react";
 import { TradeRecord, StrategyMode } from "../../types";
 import { TradeRow } from "./TradeRow";
 

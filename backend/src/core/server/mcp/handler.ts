@@ -647,7 +647,7 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string | undef
           case "get_trade_history": {
             let trades = ctx.getTrades();
             if (args.status) trades = trades.filter((t: TradeRecord) => t.status === args.status);
-            if (args.symbol) trades = trades.filter((t: TradeRecord) => t.symbol?.toLowerCase() === args.symbol.toLowerCase());
+            if (args.symbol) trades = trades.filter((t: TradeRecord) => t.symbol === args.symbol);
             const limit = typeof args.limit === "number" ? args.limit : 100;
             result = { content: [{ type: "text", text: JSON.stringify(trades.slice(0, limit), null, 2) }] };
             break;
@@ -956,7 +956,7 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string | undef
             const symbol = (args.symbol && args.symbol.trim()) || activeSymbol || "Step Index";
             const from = parseTimestamp(args.from);
             const to = parseTimestamp(args.to);
-            const initialBalance = typeof args.initialBalance === "number" ? args.initialBalance : 10000;
+
             if (!strategyId || !from || !to) {
               return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "Missing required params: strategyId, from, to" } });
             }

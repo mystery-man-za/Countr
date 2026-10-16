@@ -155,11 +155,11 @@ export class GatewayManager {
       this.commandQueue = [];
       return pending;
     }
-    const wanted = symbol.toLowerCase();
+    const wanted = symbol;
     const pending: EaCommand[] = [];
     const kept: EaCommand[] = [];
     for (const cmd of this.commandQueue) {
-      const target = (cmd.symbol || "").toLowerCase();
+      const target = cmd.symbol || "";
       if (target === wanted || target === "") {
         pending.push(cmd);
       } else {

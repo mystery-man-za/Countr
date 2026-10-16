@@ -5,18 +5,10 @@ import {
   CheckCircle2,
   Copy,
   Check,
-  Play,
   RotateCw,
   Zap,
-  ShieldAlert,
-  Sliders,
-  DollarSign,
   Activity,
-  Layers,
-  ArrowRight,
-  ExternalLink,
   Download,
-  AlertCircle,
   Radio,
 } from "lucide-react";
 

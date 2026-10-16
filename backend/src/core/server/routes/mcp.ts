@@ -1,4 +1,4 @@
-import { Request, Response, Application } from "express";
+import { Application } from "express";
 import { createMcpHandler } from "../mcp/handler";
 import { McpContext } from "../../../shared/types";
 

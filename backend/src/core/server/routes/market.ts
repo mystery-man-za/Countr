@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, Application } from "express";
+import { Request, Response, Application } from "express";
 import { scalarAiDb } from "../../composition";
 import { TradeConfig, UpdateMarketPayload, MarketCandleRow, ObservationRow } from "../../../shared/types";
 import { requireApiKey } from "../middleware/auth";

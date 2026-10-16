@@ -1,4 +1,4 @@
-import { Tick, EAConnectionDetails, CandleBar, MarketTelemetry, SymbolStateEntry, SymbolStates } from "../../../shared/types";
+import { Tick, SymbolStateEntry, SymbolStates } from "../../../shared/types";
 import { getMinuteBucket, nowEpochMs, nowIso8601 } from "../../../shared/utils/time";
 
 export type { SymbolStates, SymbolStateEntry } from "../../../shared/types";

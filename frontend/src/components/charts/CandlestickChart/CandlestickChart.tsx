@@ -8,11 +8,8 @@ import {
   RIGHT_AXIS_WIDTH,
   BOTTOM_AXIS_HEIGHT,
   CANDLE_WIDTH,
-  CANDLE_GAP,
   CANDLE_STEP,
   PRICE_TICK_COUNT,
-  PRICE_PADDING_RATIO,
-  MIN_PRICE_RANGE,
   WICK_STROKE_WIDTH,
   BODY_STROKE_WIDTH,
   LAST_CANDLE_OPACITY,
@@ -28,9 +25,7 @@ import {
   TRACKER_GLOW_OPACITY,
   AXIS_FONT_SIZE,
   AXIS_FONT_FAMILY,
-  TIME_AXIS_HEIGHT,
-  TIME_TICK_INTERVAL,
-} from "./constants";
+  } from "./constants";
 
 export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   chartData,

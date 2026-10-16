@@ -1,4 +1,4 @@
-import type { CandleData, ChartData } from "../../../hooks/useChartData";
+import type { ChartData } from "../../../hooks/useChartData";
 
 export interface CandlestickChartProps {
   chartData: ChartData;

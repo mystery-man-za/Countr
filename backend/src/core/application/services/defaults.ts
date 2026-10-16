@@ -1,4 +1,4 @@
-import { StrategyMode, TradeConfig, TradeRecord, SystemLog, Tick, AiSynthesizedStrategy, AiKnowledgeBase } from "../../../shared/types";
+import { StrategyMode, TradeConfig, SystemLog, AiSynthesizedStrategy, AiKnowledgeBase } from "../../../shared/types";
 
 export function getDefaultTradeConfig(): TradeConfig {
   return {

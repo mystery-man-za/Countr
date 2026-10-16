@@ -5,8 +5,6 @@ import { registerCotradeRoutes } from "../backend/src/core/server/routes/cotrade
 import { registerGatewayRoutes } from "../backend/src/gateway/routes";
 import { GatewayManager } from "../backend/src/gateway/gateway-manager";
 import { AppStore } from "../backend/src/core/application/services/app-store";
-import fs from "fs";
-import path from "path";
 
 describe("Cotrade & Gateway Integration Tests", () => {
   let app: express.Application;

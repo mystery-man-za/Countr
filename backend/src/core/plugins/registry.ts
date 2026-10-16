@@ -10,6 +10,7 @@ import type { Application } from "express";
 import type { AppContainer } from "../application/container";
 import type { GatewayManager } from "../../gateway/gateway-manager";
 import type { AppStore } from "../application/services/app-store";
+import { toggleTrading, resetTradeStats } from "../application/commands/control.commands";
 import { scalarAiDb } from "../composition";
 import { getSymbolState } from "../application/services/market-ingestion";
 import { registerEaRoutes } from "../server/routes/ea";
@@ -120,8 +121,10 @@ export const EXTENSIONS: Plugin[] = [
       registerTradeRoutes(
         app,
         {
-          toggleTrade: (isActive: boolean) => store.toggleTrading(isActive),
-          resetStats: () => store.resetStats(),
+          toggleTrade: (isActive: boolean) => toggleTrading(store, isActive).active,
+          resetStats: () => {
+            resetTradeStats(store);
+          },
           getTrades: () => store.trades,
           placeTrade: store.placeTrade.bind(store),
           closeTrade: store.closeTrade.bind(store),
