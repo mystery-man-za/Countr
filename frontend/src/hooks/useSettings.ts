@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useMemo } from "react";
+import { useEffect, useCallback, useState, useMemo, useRef } from "react";
 import type { StrategyMode, TradeConfig } from "../types";
 
 export interface SettingsState {
@@ -66,6 +66,9 @@ export function useSettings(config: TradeConfig): SettingsState & SettingsOption
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [webRequestStatus, setWebRequestStatus] = useState<SettingsState["webRequestStatus"]>(null);
   const [isVerifyingWebRequest, setIsVerifyingWebRequest] = useState(false);
+
+  const saveSuccessTimeoutRef = useRef<number | null>(null);
+  const webRequestIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     const savedEndpoint = typeof window !== "undefined" ? localStorage.getItem("mt5_webrequest_endpoint") || "" : "";
@@ -145,7 +148,13 @@ export function useSettings(config: TradeConfig): SettingsState & SettingsOption
 
         if (response.ok) {
           setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 2500);
+          if (saveSuccessTimeoutRef.current !== null) {
+            clearTimeout(saveSuccessTimeoutRef.current);
+          }
+          saveSuccessTimeoutRef.current = window.setTimeout(() => {
+            setSaveSuccess(false);
+            saveSuccessTimeoutRef.current = null;
+          }, 2500);
           fetchStatus();
         }
       } catch (e) {
@@ -166,8 +175,13 @@ export function useSettings(config: TradeConfig): SettingsState & SettingsOption
         }
       }
 
+      if (webRequestIntervalRef.current !== null) {
+        window.clearInterval(webRequestIntervalRef.current);
+        webRequestIntervalRef.current = null;
+      }
+
       let attempts = 0;
-      const interval = setInterval(async () => {
+      const interval = window.setInterval(async () => {
         attempts++;
         try {
           const statusRes = await fetch("/api/test-webrequest/status");
@@ -176,19 +190,39 @@ export function useSettings(config: TradeConfig): SettingsState & SettingsOption
             if (statusData && statusData.testState) {
               setWebRequestStatus(statusData.testState);
               if (statusData.testState.status !== "pending" || attempts > 15) {
-                clearInterval(interval);
+                window.clearInterval(interval);
+                if (webRequestIntervalRef.current === interval) {
+                  webRequestIntervalRef.current = null;
+                }
                 setIsVerifyingWebRequest(false);
               }
             }
           }
         } catch {
-          clearInterval(interval);
+          window.clearInterval(interval);
+          if (webRequestIntervalRef.current === interval) {
+            webRequestIntervalRef.current = null;
+          }
           setIsVerifyingWebRequest(false);
         }
       }, 1000);
+      webRequestIntervalRef.current = interval;
     } catch {
       setIsVerifyingWebRequest(false);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (webRequestIntervalRef.current !== null) {
+        window.clearInterval(webRequestIntervalRef.current);
+        webRequestIntervalRef.current = null;
+      }
+      if (saveSuccessTimeoutRef.current !== null) {
+        clearTimeout(saveSuccessTimeoutRef.current);
+        saveSuccessTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   const onParamInputChange = useCallback((patch: Partial<SettingsState["paramInput"]>) => {

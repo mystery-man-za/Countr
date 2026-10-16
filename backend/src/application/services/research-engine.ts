@@ -467,6 +467,15 @@ export function runBacktest(bars: Bar[], params: BacktestParams): BacktestResult
   const returnPct = Number(((netProfit / initialBalance) * 100).toFixed(2));
   const avgTrade = totalTrades > 0 ? Number((netProfit / totalTrades).toFixed(2)) : 0;
 
+  const tradePnls = trades.map((t) => t.pnl);
+  const tradeReturns = initialBalance > 0
+    ? tradePnls.map((pnl) => pnl / initialBalance)
+    : tradePnls;
+  const meanReturn = totalTrades > 0 ? tradeReturns.reduce((sum, r) => sum + r, 0) / totalTrades : 0;
+  const variance = totalTrades > 0 ? tradeReturns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / totalTrades : 0;
+  const stdReturn = Math.sqrt(variance);
+  const sharpeRatio = totalTrades > 0 && stdReturn > 0 ? Number((meanReturn / stdReturn).toFixed(2)) : 0;
+
   return {
     strategy: params.strategy,
     symbol,
@@ -482,7 +491,7 @@ export function runBacktest(bars: Bar[], params: BacktestParams): BacktestResult
     profitFactor,
     maxDrawdown: Number(maxDrawdown.toFixed(2)),
     maxDrawdownPct: Number(maxDrawdownPct.toFixed(2)),
-    sharpeRatio: Number((profitFactor > 1 ? 1.45 + (profitFactor - 1) * 0.5 : 0.6).toFixed(2)),
+    sharpeRatio,
     avgTrade,
     equityCurve,
     trades,
