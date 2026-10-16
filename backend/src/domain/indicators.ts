@@ -1,4 +1,10 @@
-import { Tick } from "../shared/types";
+interface Tick {
+  price: number;
+  close?: number;
+  high?: number;
+  low?: number;
+  velocity?: number;
+}
 
 export function getClosePrices(ticks: Tick[]): number[] {
   return ticks.map(t => (t.close !== undefined ? t.close : t.price));
