@@ -184,9 +184,9 @@ export class BacktestEngine {
     };
   }
 
-  saveResult(result: BacktestResult): void {
+  saveResult(result: BacktestResult, db: typeof scalarAiDb = scalarAiDb): void {
     const id = `bt_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    scalarAiDb.insertBacktestResult({
+    db.insertBacktestResult({
       id,
       strategy_id: result.strategyId,
       strategy_version_id: null,
