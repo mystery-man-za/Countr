@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cli": "tsx backend/src/cli/app.ts",
-    "audit:layers": "tsx backend/src/tools/audit_layering.ts",
+    "audit:layers": "tsx backend/src/tools/audit/audit_layering.ts",
     "gateway:daemon": "tsx backend/src/gateway/deamon/run.ts"
   },
   "dependencies": {
