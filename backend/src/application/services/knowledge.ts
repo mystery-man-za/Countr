@@ -8,12 +8,12 @@ export interface KnowledgeUpdateResult {
   updatedHours: string[];
 }
 
-export function updateKnowledgeBaseFromTelemetry(symbol: string, telemetry: Array<{ velocity: number; timestamp: number }>): KnowledgeUpdateResult {
+export function updateKnowledgeBaseFromTelemetry(symbol: string, telemetry: Array<{ velocity: number; timestamp: number }>, db: typeof scalarAiDb = scalarAiDb): KnowledgeUpdateResult {
   if (!telemetry || telemetry.length === 0) {
     return { totalObservations: 0, globalAverageSpeed: 0, peakVelocityRegistered: 0, updatedHours: [] };
   }
 
-  const existing = scalarAiDb.getAiKnowledge();
+  const existing = db.getAiKnowledge();
   const knowledge: AiKnowledgeBase = existing || {
     totalObservations: 0,
     globalAverageSpeed: 0,
@@ -48,7 +48,7 @@ export function updateKnowledgeBaseFromTelemetry(symbol: string, telemetry: Arra
   }
 
   knowledge.lastUpdated = new Date().toISOString();
-  scalarAiDb.upsertAiKnowledge(knowledge);
+  db.upsertAiKnowledge(knowledge);
 
   return {
     totalObservations: knowledge.totalObservations,
