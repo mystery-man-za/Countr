@@ -20,31 +20,6 @@ export function registerEaRoutes(
 ) {
   const authMiddleware = requireApiKey(apiKey);
 
-  app.get("/api/ea/download", (req: Request, res: Response) => {
-    try {
-      const eaCandidates = [
-        path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5"),
-        path.resolve(process.cwd(), "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
-      ];
-      let eaPath = "";
-      for (const candidate of eaCandidates) {
-        if (fs.existsSync(candidate)) {
-          eaPath = candidate;
-          break;
-        }
-      }
-      if (!eaPath) {
-        return res.status(404).send("// ScalarAI_Gateway_EA.mq5 not found");
-      }
-      res.setHeader("Content-Disposition", 'attachment; filename="ScalarAI_Gateway_EA.mq5"');
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      fs.createReadStream(eaPath).pipe(res);
-    } catch (err: unknown) {
-      console.error("EA download error:", err);
-      res.status(500).send("// Failed to download MQL5 EA");
-    }
-  });
-
   app.get("/api/ea/generator-source", (req: Request, res: Response) => {
     try {
       let eaPath = path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5");
@@ -307,6 +282,7 @@ refpoint=2
 
   app.get("/api/ea/version", (req: Request, res: Response) => {
     try {
+      res.setHeader("X-ScalarAI-Deprecation", "Generated MultiAsset EA source is legacy. Use /api/ea/download for the canonical gateway EA.");
       const code = generateMql5Code();
       const versionMatch = code.match(/#property\s+version\s+"([^"]+)"/);
       const version = versionMatch ? versionMatch[1] : "unknown";
@@ -318,6 +294,7 @@ refpoint=2
 
   app.get("/api/ea/code", (req: Request, res: Response) => {
     try {
+      res.setHeader("X-ScalarAI-Deprecation", "Generated MultiAsset EA source is legacy. Use /api/ea/download for the canonical gateway EA.");
       const queryUrl = (req.query.url as string)?.trim();
       let appUrl = queryUrl || `${req.protocol}://${req.get("host")}`;
       appUrl = appUrl.replace(/\/$/, "");
