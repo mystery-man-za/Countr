@@ -47,7 +47,14 @@ export function registerEaRoutes(
 
   app.get("/api/ea/generator-source", (req: Request, res: Response) => {
     try {
-      const eaPath = path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5");
+      let eaPath = path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5");
+      const eaCandidates = [
+        eaPath,
+        path.resolve(process.cwd(), "backend", "src", "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+        path.resolve(process.cwd(), "backend", "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+        path.resolve(process.cwd(), "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+      ];
+      eaPath = eaCandidates.find((f) => fs.existsSync(f)) || eaPath;
       if (fs.existsSync(eaPath)) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         return fs.createReadStream(eaPath).pipe(res);

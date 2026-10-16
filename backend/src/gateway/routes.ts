@@ -103,6 +103,8 @@ export function registerGatewayRoutes(app: Application, gateway: GatewayManager)
     const eaCandidates = [
       path.resolve(process.cwd(), "ea", "ScalarAI_Gateway_EA.mq5"),
       path.resolve(process.cwd(), "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+      path.resolve(process.cwd(), "backend", "src", "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
+      path.resolve(process.cwd(), "backend", "gateway", "ea", "ScalarAI_Gateway_EA.mq5"),
     ];
 
     let eaPath = "";
