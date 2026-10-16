@@ -12,6 +12,7 @@ import { tradingMachine, bridgeMachine, calibrationMachine, TradingMachineServic
 import { ObservationsService } from "./observations";
 
 export class AppStore implements AppStoreReadOnly {
+  private db: (typeof scalarAiDb) = scalarAiDb;
   private tradeConfig: TradeConfig;
   private tradesList: TradeRecord[];
   private systemLogs: SystemLog[];
@@ -36,7 +37,8 @@ export class AppStore implements AppStoreReadOnly {
   private calibrationState: CalibrationMachineService;
   private observationsService: ObservationsService;
 
-  constructor() {
+  constructor(db: typeof scalarAiDb = scalarAiDb) {
+    this.db = db;
     this.tradeConfig = getDefaultTradeConfig();
     this.tradesList = [];
     this.systemLogs = [];
@@ -46,7 +48,7 @@ export class AppStore implements AppStoreReadOnly {
     this.symbolStates = createSymbolStates("");
     this.activeSymbol = "";
     this.lastProcessedTelemetryIndex = 0;
-    this.nextTicket = { value: scalarAiDb.getMaxTicket() + 1 };
+    this.nextTicket = { value: this.db.getMaxTicket() + 1 };
     this.latestBuyLockedFromEa = false;
     this.latestSellLockedFromEa = false;
     this.pendingBridgeOrders = [];
@@ -65,7 +67,7 @@ export class AppStore implements AppStoreReadOnly {
     this.tradingState = createActor(tradingMachine).start();
     this.bridgeState = createActor(bridgeMachine).start();
     this.calibrationState = createActor(calibrationMachine).start();
-    this.observationsService = new ObservationsService(scalarAiDb);
+    this.observationsService = new ObservationsService(this.db);
   }
 
   get config(): TradeConfig { return this.tradeConfig; }
@@ -150,7 +152,7 @@ export class AppStore implements AppStoreReadOnly {
     this.aiSynthesizedStrategy = loaded.aiSynthesizedStrategy;
     this.tradesList = loaded.trades;
     this.systemLogs = loaded.logs;
-    this.nextTicket = { value: scalarAiDb.getMaxTicket() + 1 };
+    this.nextTicket = { value: this.db.getMaxTicket() + 1 };
   }
 
   addLog(source: "SERVER" | "EA" | "AI", level: "INFO" | "SUCCESS" | "WARNING" | "ERROR", message: string): void {
@@ -250,7 +252,7 @@ export class AppStore implements AppStoreReadOnly {
             // Was `{ ticket: confirmation.ticket }` - the same local ticket the
             // lookup matched on, so the write was a self-assignment, and the column
             // did not exist at all. The MT5 identity was lost on every restart.
-            scalarAiDb.updateTrade(trade.id, { mt5Ticket: confirmation.mt5Ticket });
+            this.db.updateTrade(trade.id, { mt5Ticket: confirmation.mt5Ticket });
           } catch (err) {
             this.addLog("SERVER", "WARNING", `Failed to persist MT5 ticket ${confirmation.mt5Ticket} for trade #${trade.ticket}: ${err instanceof Error ? err.message : String(err)}`);
           }
@@ -310,7 +312,7 @@ export class AppStore implements AppStoreReadOnly {
           tp: pos.tp > 0 ? pos.tp : undefined,
         };
         this.tradesList.unshift(importedTrade);
-        try { scalarAiDb.insertTrade(importedTrade); } catch {}
+        try { this.db.insertTrade(importedTrade); } catch {}
         updatedAny = true;
       }
     }
@@ -324,7 +326,7 @@ export class AppStore implements AppStoreReadOnly {
         trade.closePrice = getSymbolState(this.symbolStates, trade.symbol || this.activeSymbol).currentPrice;
         trade.reason = "Position liquidated or SL/TP hit on MetaTrader 5";
         try {
-          scalarAiDb.updateTrade(trade.id, {
+          this.db.updateTrade(trade.id, {
             status: trade.status,
             closeTime: trade.closeTime,
             closePrice: trade.closePrice,
@@ -432,9 +434,9 @@ export class AppStore implements AppStoreReadOnly {
     try {
       const latestTick = state.ticks[state.ticks.length - 1];
       if (latestTick) {
-        scalarAiDb.insertTick(latestTick, symbol);
+        this.db.insertTick(latestTick, symbol);
       }
-      scalarAiDb.upsertEaConnection(state.connection);
+      this.db.upsertEaConnection(state.connection);
     } catch {
       // quiet persistence
     }
@@ -581,10 +583,10 @@ export class AppStore implements AppStoreReadOnly {
       getObservations: (filters?: ObservationFilters) => this.observationsService.getObservations(filters),
       generateInsights: (symbol: string, from?: number, to?: number) => this.observationsService.generateInsights(symbol, { from, to }),
       backtestStrategyWithHistory: (strategyId: string, symbol: string, from: number, to: number, initialBalance?: number) => {
-        const candles = scalarAiDb.getCandles(symbol, from, to, 10000);
+        const candles = this.db.getCandles(symbol, from, to, 10000);
         if (candles.length === 0) return { error: "No candles found" };
 
-        const strategy = scalarAiDb.getStrategyById(strategyId);
+        const strategy = this.db.getStrategyById(strategyId);
         if (!strategy) return { error: "Strategy not found" };
 
         const engine = new BacktestEngine();
@@ -622,7 +624,7 @@ export class AppStore implements AppStoreReadOnly {
   }
 
   loadAiSynthesizedStrategy(): void {
-    const saved = scalarAiDb.getAiStrategy();
+    const saved = this.db.getAiStrategy();
     if (saved) {
       this.aiSynthesizedStrategy = saved;
       this.addLog("AI", "SUCCESS", `Loaded persistent AI Synthesized Strategy. Name: '${saved.name}'`);
@@ -633,7 +635,7 @@ export class AppStore implements AppStoreReadOnly {
   }
 
   loadAiKnowledgeBase(): void {
-    const saved = scalarAiDb.getAiKnowledge();
+    const saved = this.db.getAiKnowledge();
     if (saved) {
       this.aiKnowledgeBase = saved;
       this.addLog("AI", "SUCCESS", `Loaded long-term knowledge base. Total historical observations: ${saved.totalObservations}, Glob Avg Speed: ${saved.globalAverageSpeed} pt/s.`);
@@ -824,7 +826,7 @@ export class AppStore implements AppStoreReadOnly {
   getSymbolsList(): Array<{ symbol: string; isConnected: boolean; currentPrice: number; tickCount: number; digits?: number | null; tickSize?: number | null }> {
     const known = new Set<string>();
     Array.from(this.symbolStates.map.keys()).forEach((s) => known.add(s));
-    scalarAiDb.getKnownSymbols().forEach((s) => known.add(s));
+    this.db.getKnownSymbols().forEach((s) => known.add(s));
 
     return Array.from(known).map((symbol) => {
       const state = this.symbolStates.map.get(symbol);
@@ -887,12 +889,12 @@ export class AppStore implements AppStoreReadOnly {
           minute_bucket: Math.floor(timeMs / 60000) * 60000,
         };
       });
-      scalarAiDb.insertCandlesBatch(candleRows);
+      this.db.insertCandlesBatch(candleRows);
       this.addLog("EA", "SUCCESS", `Loaded ${candles.length} historical bars for ${symbol} from MT5.`);
     }
 
     try {
-      scalarAiDb.upsertEaConnection(state.connection);
+      this.db.upsertEaConnection(state.connection);
     } catch {}
 
     this.broadcastToDashboards({ type: "init", payload: this.getFullStatusPayload() });
@@ -900,7 +902,7 @@ export class AppStore implements AppStoreReadOnly {
 
   resetStats(): void {
     this.tradesList.length = 0;
-    scalarAiDb.resetTrades();
+    this.db.resetTrades();
     this.addLog("SERVER", "SUCCESS", "User reset session statistics and trading history log.");
     this.broadcastTradesUpdate();
   }
