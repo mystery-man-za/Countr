@@ -134,7 +134,7 @@ describe("Cotrade & Gateway Integration Tests", () => {
   it("returns database statistics and integrity check", async () => {
     const statsRes = await request(app).get("/api/db/stats");
     expect(statsRes.status).toBe(200);
-    expect(statsRes.body.database).toBe("SQLite 3");
+    expect(statsRes.body.database).toContain("SQLite 3");
     expect(statsRes.body.tables).toHaveProperty("trades");
 
     const integrityRes = await request(app).get("/api/db/integrity");

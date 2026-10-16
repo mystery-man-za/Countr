@@ -4,11 +4,16 @@
 
 ## Stack
 
-- **Engine:** SQLite via `better-sqlite3`
+- **Engine:** SQLite via Node's built-in `node:sqlite` (`DatabaseSync`) — no native dependency
+- **Adapter:** `db/sqlite.ts` wraps the driver with a prepared-statement cache, parameter
+  normalisation (`undefined` → `NULL`, booleans → `0/1`, non-finite rejected) and
+  nested-savepoint transactions
 - **Pattern:** Singleton — `scalarAiDb` exported from `db/index.ts`
 - **Path:** `backend/data/scalarai.sqlite`
-- **Journal:** WAL mode enabled
+- **Journal:** WAL mode enabled, plus `busy_timeout=5000` and `synchronous=NORMAL`
 - **Foreign keys:** Enabled
+- **Migrations:** `schema.sql` is re-applied on every boot (all `CREATE ... IF NOT EXISTS`);
+  alterations are applied in order from `PRAGMA user_version`, each idempotent
 
 ## Files
 
@@ -27,7 +32,7 @@ Creates DB connection, runs migrations, exports singleton.
 
 ### `migrate.ts`
 
-- `openDb(): InstanceType<typeof Database>` — opens SQLite DB at `backend/data/scalarai.sqlite`
+- `openDb(): SqliteDatabase` — opens SQLite DB at `backend/data/scalarai.sqlite`
 - `migrate(db)` — executes `schema.sql`, runs ALTER TABLE migrations, seeds defaults
 
 **Seed defaults:**

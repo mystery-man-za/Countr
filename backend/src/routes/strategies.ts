@@ -1,7 +1,7 @@
 import { Request, Response, Application } from "express";
 import { scalarAiDb } from "../db";
 import { StrategyMode, StrategyRow, TradeRecord } from "../types";
-import { STRATEGY_TEMPLATES, getStrategyTemplateById } from "../services/strategy-templates";
+import { STRATEGY_TEMPLATES, getStrategyTemplateById, createStrategyFromTemplate } from "../services/strategy-templates";
 
 export function registerStrategyRoutes(app: Application) {
   app.get("/api/strategies", (req: Request, res: Response) => {
@@ -68,7 +68,8 @@ export function registerStrategyRoutes(app: Application) {
       const { name, description, mode, rules, templateId, overrides } = req.body;
       
       if (templateId) {
-        const { createStrategyFromTemplate } = require("../services/strategy-templates");
+        // Was `require(...)`, which throws "require is not defined" in this ESM
+        // package - template-based strategy creation always failed with a 500.
         const strategy = createStrategyFromTemplate(templateId, overrides);
         scalarAiDb.upsertAiStrategy(strategy);
         return res.json({ success: true, strategy });

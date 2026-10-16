@@ -191,12 +191,12 @@ export function updateMarket(
     high: data.high !== undefined ? Number(data.high) : state.currentPrice,
     low: data.low !== undefined ? Number(data.low) : state.currentPrice,
     close: Number(state.currentPrice),
-    volume: data.volume !== undefined ? Number(data.volume) : null,
+    volume: data.volume !== undefined ? Number(data.volume) : undefined,
     velocity: numVelocity,
     buyLocked: isBuyLocked,
     sellLocked: isSellLocked,
-    spread: data.spread !== undefined ? Number(data.spread) : null,
-    session: data.session || null,
+    spread: data.spread !== undefined ? Number(data.spread) : undefined,
+    session: data.session || undefined,
   };
   state.ticks.push(tickRecord);
   if (state.ticks.length > 150) state.ticks.shift();

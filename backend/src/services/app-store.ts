@@ -247,8 +247,13 @@ export class AppStore implements AppStoreReadOnly {
         if (trade) {
           trade.mt5Ticket = confirmation.mt5Ticket;
           try {
-            scalarAiDb.updateTrade(trade.id, { ticket: confirmation.ticket });
-          } catch {}
+            // Was `{ ticket: confirmation.ticket }` - the same local ticket the
+            // lookup matched on, so the write was a self-assignment, and the column
+            // did not exist at all. The MT5 identity was lost on every restart.
+            scalarAiDb.updateTrade(trade.id, { mt5Ticket: confirmation.mt5Ticket });
+          } catch (err) {
+            this.addLog("SERVER", "WARNING", `Failed to persist MT5 ticket ${confirmation.mt5Ticket} for trade #${trade.ticket}: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }
       }
       this.addLog(

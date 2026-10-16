@@ -233,10 +233,17 @@ export async function openSimulatedPosition(
 }
 
 export function closeSimulatedPosition(state: TradeState, trade: TradeRecord, reason: string, callbacks: AppCallbacks): void {
+  // Price the exit against the instrument the trade was actually opened on.
+  // This used to read `state.activeSymbol` while the rest of the function (and
+  // openSimulatedPosition) used `trade.symbol`, so closing a non-active symbol
+  // computed P&L from an unrelated instrument's price.
+  const tradeSymbol = trade.symbol || state.activeSymbol;
+  const exitPrice = getSymbolState(state.symbolStates, tradeSymbol).currentPrice;
+
   trade.status = "CLOSED";
-  trade.closePrice = getSymbolState(state.symbolStates, state.activeSymbol).currentPrice;
+  trade.closePrice = exitPrice;
   trade.closeTime = new Date().toLocaleTimeString();
-  const profitFactor = trade.type === "BUY" ? getSymbolState(state.symbolStates, state.activeSymbol).currentPrice - trade.entryPrice : trade.entryPrice - getSymbolState(state.symbolStates, state.activeSymbol).currentPrice;
+  const profitFactor = trade.type === "BUY" ? exitPrice - trade.entryPrice : trade.entryPrice - exitPrice;
   const finalProfit = Number((profitFactor * 10.0 * trade.lotSize).toFixed(2));
   trade.profit = finalProfit;
   trade.reason = reason;

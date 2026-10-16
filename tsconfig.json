@@ -11,6 +11,7 @@
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
+    "strict": true,
     "paths": {
       "@/*": ["./*"],
       "backend/*": ["./backend/src/*"],
@@ -19,7 +20,10 @@
       "@styles/*": ["./frontend/src/styles/*"]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["tests"]
+  "include": ["backend/**/*.ts", "frontend/**/*.ts", "frontend/**/*.tsx", "tests/**/*.ts", "server.ts"],
+  "exclude": ["node_modules", "dist"]
 }

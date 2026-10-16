@@ -6,6 +6,7 @@ import { BacktestEngine } from "./services/strategy-backtest";
 import { updateKnowledgeBaseFromTelemetry, formatKnowledgeBase } from "./services/knowledge";
 import { analyzeMarket, analyzeStrategyPerformance, suggestStrategyOptimizations, recommendStrategyForConditions } from "./services/strategy-research";
 import { parseTimestamp, parseLimit } from "./utils/time";
+import { STRATEGY_TEMPLATES, createStrategyFromTemplate } from "./services/strategy-templates";
 
 export interface McpTool {
   name: string;
@@ -466,7 +467,20 @@ export function isReadOnlySql(sql: string): boolean {
   return !forbidden.some(keyword => normalized.includes(keyword));
 }
 
-export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
+/**
+ * Formats one value as an RFC 4180 CSV field.
+ *
+ * The previous inline template literal produced `"${v}"`, which broke on any log
+ * message containing a double quote (it closed the field early) or a newline
+ * (it started a spurious new record). Quotes are doubled and newlines flattened.
+ */
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '""';
+  if (typeof value === "object") value = JSON.stringify(value);
+  return `"${String(value).replace(/"/g, '""').replace(/\r\n|\r|\n/g, " ")}"`;
+}
+
+export function createMcpHandler(ctx: McpContext, expectedApiKey: string | undefined) {
   return async (req: Request, res: Response) => {
     const body = req.body || {};
 
@@ -474,11 +488,20 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
       return res.status(400).json({ jsonrpc: "2.0", error: { code: -32600, message: "Invalid Request" } });
     }
 
-    if (expectedApiKey && expectedApiKey.trim().length > 0) {
-      const authHeader = req.headers.authorization || "";
-      if (!authHeader.startsWith(`Bearer ${expectedApiKey}`)) {
-        return res.status(401).json({ jsonrpc: "2.0", id: body.id ?? null, error: { code: -32001, message: "Unauthorized: Invalid or missing Bearer token" } });
-      }
+    // Fail closed. Previously an unset SCALARAI_MCP_API_KEY skipped authentication
+    // entirely, leaving an endpoint that runs SQL and mutates strategies open to
+    // anyone who could reach the port - and .env.example never set the key.
+    if (!expectedApiKey || expectedApiKey.trim().length === 0) {
+      return res.status(503).json({
+        jsonrpc: "2.0",
+        id: body.id ?? null,
+        error: { code: -32003, message: "MCP endpoint disabled: SCALARAI_MCP_API_KEY is not configured" },
+      });
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith(`Bearer ${expectedApiKey}`)) {
+      return res.status(401).json({ jsonrpc: "2.0", id: body.id ?? null, error: { code: -32001, message: "Unauthorized: Invalid or missing Bearer token" } });
     }
 
     const id = body.id ?? null;
@@ -763,7 +786,7 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
               result = { content: [{ type: "text", text: "No knowledge base found. Initialize it first." }] };
               break;
             }
-            const telemetry = scalarAiDb.rawQuery("SELECT velocity, timestamp FROM market_ticks ORDER BY timestamp DESC LIMIT 500", []) as Array<{ velocity: number; timestamp: number }>;
+            const telemetry = scalarAiDb.rawQuery("SELECT velocity, time AS timestamp FROM market_ticks ORDER BY time DESC LIMIT 500", []) as Array<{ velocity: number; timestamp: number }>;
             const updateResult = updateKnowledgeBaseFromTelemetry(symbol, telemetry.reverse());
             result = { content: [{ type: "text", text: JSON.stringify({
               success: true,
@@ -818,7 +841,6 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
             break;
           }
           case "list_strategy_templates": {
-            const { STRATEGY_TEMPLATES } = require("./services/strategy-templates");
             const templates = STRATEGY_TEMPLATES.map(t => ({
               id: t.id,
               name: t.name,
@@ -838,7 +860,6 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
               break;
             }
             try {
-              const { createStrategyFromTemplate } = require("./services/strategy-templates");
               const strategy = createStrategyFromTemplate(templateId, args.overrides);
               scalarAiDb.upsertAiStrategy(strategy);
               result = { content: [{ type: "text", text: JSON.stringify({ success: true, strategy }, null, 2) }] };
@@ -853,7 +874,7 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
             const limit = typeof args.limit === "number" ? args.limit : 500;
             const format = args.format || "json";
 
-            let data: TradeRecord[] | SystemLog[] | unknown[];
+            let data: unknown[];
             switch (type) {
               case "trades":
                 data = scalarAiDb.getTrades().slice(0, limit);
@@ -869,8 +890,9 @@ export function createMcpHandler(ctx: McpContext, expectedApiKey: string) {
             }
             
             if (format === "csv" && data.length > 0) {
-              const headers = Object.keys(data[0]).join(",");
-              const rows = data.map(row => Object.values(row).map(v => `"${v}"`).join(","));
+              const records = data as Array<Record<string, unknown>>;
+              const headers = Object.keys(records[0]).join(",");
+              const rows = records.map((row) => Object.values(row).map(csvCell).join(","));
               result = { content: [{ type: "text", text: [headers, ...rows].join("\n") }] };
             } else {
               result = { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };

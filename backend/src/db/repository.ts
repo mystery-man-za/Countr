@@ -1,4 +1,6 @@
-import Database from "better-sqlite3";
+import fs from "fs";
+import { SqliteDatabase } from "./sqlite";
+import { DB_PATH } from "./migrate";
 import {
   TradeConfig,
   TradeRecord,
@@ -24,15 +26,16 @@ import {
 } from "../types";
 
 export class ScalarAiDb {
-  constructor(private db: InstanceType<typeof Database>) {}
+  constructor(private db: SqliteDatabase) {}
 
   // Trades
   insertTrade(trade: TradeRecord): void {
     this.db.prepare(
-      `INSERT INTO trades (id, ticket, symbol, type, entry_price, close_price, lot_size, profit, status, open_time, close_time, strategy, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO trades (id, ticket, mt5_ticket, symbol, type, entry_price, close_price, lot_size, profit, status, open_time, close_time, strategy, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       trade.id,
       trade.ticket,
+      trade.mt5Ticket ?? null,
       trade.symbol || "Step Index",
       trade.type,
       trade.entryPrice,
@@ -56,6 +59,10 @@ export class ScalarAiDb {
     if (updates.closeTime !== undefined) { sets.push("close_time = ?"); values.push(updates.closeTime); }
     if (updates.reason !== undefined) { sets.push("reason = ?"); values.push(updates.reason); }
     if (updates.symbol !== undefined) { sets.push("symbol = ?"); values.push(updates.symbol); }
+    // `ticket` was previously accepted-and-ignored: callers passed the MT5 ticket but
+    // no SET clause was emitted, so the call was a silent no-op behind a `catch {}`.
+    if (updates.ticket !== undefined) { sets.push("ticket = ?"); values.push(updates.ticket); }
+    if (updates.mt5Ticket !== undefined) { sets.push("mt5_ticket = ?"); values.push(updates.mt5Ticket); }
     if (!sets.length) return;
     values.push(id);
     this.db.prepare(`UPDATE trades SET ${sets.join(", ")} WHERE id = ?`).run(...values);
@@ -65,6 +72,7 @@ export class ScalarAiDb {
     return {
       id: row.id,
       ticket: row.ticket,
+      mt5Ticket: row.mt5_ticket ?? undefined,
       symbol: row.symbol || "Step Index",
       type: row.type,
       entryPrice: row.entry_price,
@@ -430,14 +438,23 @@ export class ScalarAiDb {
     return row.maxTicket ?? 837201;
   }
 
+  /**
+   * Read-only escape hatch for analytics and the MCP layer.
+   *
+   * The statement is compiled uncached so caller-supplied SQL cannot evict hot-path
+   * statements. Non-read-only or multi-statement input is rejected loudly: the
+   * previous version returned `[]` for anything that was not a `SELECT`, which made
+   * a silently-dropped `UPDATE` indistinguishable from a query that matched no rows.
+   */
   rawQuery(sql: string, params: unknown[] = []): unknown[] {
-    const normalized = sql.trim().replace(/\s+/g, " ").toUpperCase();
-    if (!normalized.startsWith("SELECT")) return [];
-    if (normalized.includes(";")) return [];
-    if (normalized.includes("--")) return [];
-    if (normalized.includes("/*")) return [];
-    const stmt = this.db.prepare(sql);
-    return stmt.all(...params);
+    const statement = sql.trim().replace(/;\s*$/, "");
+    if (!/^(SELECT|WITH)\b/i.test(statement)) {
+      throw new Error("rawQuery accepts read-only SELECT/WITH statements only");
+    }
+    if (statement.includes(";")) {
+      throw new Error("rawQuery accepts a single statement only");
+    }
+    return this.db.prepareUncached(statement).all(...params);
   }
 
   // Maintenance
@@ -458,12 +475,56 @@ export class ScalarAiDb {
     const tickCount = (this.db.prepare(`SELECT COUNT(*) as count FROM market_ticks`).get() as { count: number }).count;
     const logCount = (this.db.prepare(`SELECT COUNT(*) as count FROM system_logs`).get() as { count: number }).count;
     const tradeCount = (this.db.prepare(`SELECT COUNT(*) as count FROM trades`).get() as { count: number }).count;
-    
-    const dbPath = process.cwd() + "/backend/data/scalarai.sqlite";
-    const fs = require("fs");
-    const dbSizeBytes = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0;
-    
+
+    const dbSizeBytes = fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0;
+
     return { tickCount, logCount, tradeCount, dbSizeBytes };
+  }
+
+  // Database maintenance / diagnostics
+  //
+  // These replace direct `getDbInstance()` access from the route layer, which leaked
+  // the SQLite driver into HTTP handlers and made them driver-specific.
+
+  /** Row counts for the tables surfaced in the dashboard diagnostics panel. */
+  getTableCounts(): Record<string, number> {
+    const tables = [
+      "market_ticks",
+      "market_candles",
+      "trades",
+      "deals",
+      "system_logs",
+      "observations",
+      "strategies",
+      "strategy_versions",
+      "backtest_results",
+    ] as const;
+    const counts: Record<string, number> = {};
+    for (const table of tables) {
+      // A table may legitimately be absent on an older database file.
+      try {
+        const row = this.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get<{ count: number }>();
+        counts[table] = row?.count ?? 0;
+      } catch {
+        counts[table] = 0;
+      }
+    }
+    return counts;
+  }
+
+  /** Reclaims space from deleted rows. Must not run inside a transaction. */
+  vacuum(): void {
+    this.db.exec("VACUUM");
+  }
+
+  /** SQLite structural check; returns `[{ integrity_check: "ok" }]` when healthy. */
+  integrityCheck(): Array<Record<string, unknown>> {
+    return this.db.prepareUncached("PRAGMA integrity_check").all<Record<string, unknown>>();
+  }
+
+  /** Current migration level recorded in `PRAGMA user_version`. */
+  getSchemaVersion(): number {
+    return this.db.pragmaValue("user_version");
   }
 
   // Market candles
@@ -488,8 +549,11 @@ export class ScalarAiDb {
     const stmt = this.db.prepare(
       `INSERT INTO market_candles (symbol, time, open, high, low, close, volume, direction, minute_bucket) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    const insertMany = this.db.transaction((items: MarketCandleRow[]) => {
-      for (const item of items) {
+    // better-sqlite3's db.transaction(fn) returned a *callable* wrapper, so the old
+    // code built `insertMany` then invoked it. SqliteDatabase.transaction executes
+    // the callback immediately instead.
+    this.db.transaction(() => {
+      for (const item of candles) {
         stmt.run(
           item.symbol,
           item.time,
@@ -503,7 +567,6 @@ export class ScalarAiDb {
         );
       }
     });
-    insertMany(candles);
   }
 
   getKnownSymbols(): string[] {
@@ -555,6 +618,29 @@ export class ScalarAiDb {
       observation.tags,
       observation.metadata
     );
+  }
+
+  /**
+   * Merges keys into an observation's JSON `metadata` column.
+   *
+   * Added because `linkObservationToStrategy` previously routed its `UPDATE`
+   * through `rawQuery`, which only permits SELECT - the write was silently
+   * discarded and the observation was never actually linked.
+   */
+  updateObservationMetadata(id: string, patch: Record<string, unknown>): boolean {
+    const row = this.db.prepare(`SELECT metadata FROM observations WHERE id = ?`).get<{ metadata: string }>(id);
+    if (!row) return false;
+    let metadata: Record<string, unknown> = {};
+    try {
+      metadata = JSON.parse(row.metadata || "{}");
+    } catch {
+      metadata = {};
+    }
+    const merged = { ...metadata, ...patch };
+    const result = this.db
+      .prepare(`UPDATE observations SET metadata = ? WHERE id = ?`)
+      .run(JSON.stringify(merged), id);
+    return result.changes > 0;
   }
 
   getObservations(symbol?: string, from?: number, to?: number, limit = 500): ObservationRow[] {
@@ -714,11 +800,6 @@ export class ScalarAiDb {
 
   getStrategySymbolPerformance(strategyId: string): StrategySymbolPerformanceRow[] {
     return this.db.prepare(`SELECT * FROM strategy_symbol_performance WHERE strategy_id = ?`).all(strategyId) as StrategySymbolPerformanceRow[];
-  }
-
-  // Database instance accessor
-  getDbInstance(): InstanceType<typeof Database> {
-    return this.db;
   }
 
   // Closed deals ledger

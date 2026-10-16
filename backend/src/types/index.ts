@@ -484,6 +484,7 @@ export interface StrategyRow {
 export interface TradeRow {
   id: string;
   ticket: number;
+  mt5_ticket: number | null;
   symbol: string;
   type: "BUY" | "SELL";
   entry_price: number;

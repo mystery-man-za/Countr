@@ -76,7 +76,9 @@ describe("createMcpHandler integration", () => {
       closeAllTrades: async () => ({ success: true, closedCount: 2, message: "Closed 2 trades" }),
     };
 
-    const handler = createMcpHandler(mockCtx, "");
+    const API_KEY = "test-api-key";
+    const authed = { authorization: `Bearer ${API_KEY}` };
+    const handler = createMcpHandler(mockCtx, API_KEY);
     let responseData: any;
     const mockRes: any = {
       json: (data: any) => { responseData = data; return mockRes; },
@@ -84,7 +86,7 @@ describe("createMcpHandler integration", () => {
     };
 
     // Test tools/list
-    await handler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: {} } as any, mockRes);
+    await handler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: authed } as any, mockRes);
     expect(responseData.result.tools).toBeDefined();
     const toolNames = responseData.result.tools.map((t: any) => t.name);
     expect(toolNames).toContain("place_validated_trade");
@@ -94,15 +96,46 @@ describe("createMcpHandler integration", () => {
     expect(toolNames).toContain("get_ea_telemetry");
 
     // Test tools/call: get_symbols
-    await handler({ body: { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_symbols", arguments: {} } }, headers: {} } as any, mockRes);
+    await handler({ body: { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_symbols", arguments: {} } }, headers: authed } as any, mockRes);
     expect(responseData.result.content[0].text).toContain("Boom 1000");
 
     // Test tools/call: place_validated_trade
-    await handler({ body: { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "place_validated_trade", arguments: { type: "BUY", symbol: "Boom 1000", lotSize: 0.2 } } }, headers: {} } as any, mockRes);
+    await handler({ body: { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "place_validated_trade", arguments: { type: "BUY", symbol: "Boom 1000", lotSize: 0.2 } } }, headers: authed } as any, mockRes);
     expect(responseData.result.content[0].text).toContain("Trade placed");
 
     // Test tools/call: close_all_trades
-    await handler({ body: { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "close_all_trades", arguments: { symbol: "Boom 1000" } } }, headers: {} } as any, mockRes);
+    await handler({ body: { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "close_all_trades", arguments: { symbol: "Boom 1000" } } }, headers: authed } as any, mockRes);
     expect(responseData.result.content[0].text).toContain("Closed 2 trades");
+  });
+
+  it("rejects unauthenticated and unconfigured requests", async () => {
+    const { createMcpHandler } = await import("../backend/src/mcp_server");
+    const mockCtx: any = { getStatus: () => ({}), getSymbols: () => [], switchSymbol: () => {} };
+
+    let responseData: any;
+    let statusCode = 200;
+    const mockRes: any = {
+      json: (data: any) => { responseData = data; return mockRes; },
+      status: (code: number) => { statusCode = code; return mockRes; },
+    };
+
+    // Configured but wrong/missing token -> 401
+    const handler = createMcpHandler(mockCtx, "secret-key");
+    await handler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: {} } as any, mockRes);
+    expect(statusCode).toBe(401);
+
+    await handler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: { authorization: "Bearer wrong" } } as any, mockRes);
+    expect(statusCode).toBe(401);
+
+    // No key configured -> fail closed with 503 rather than serving unauthenticated.
+    // This endpoint can execute SQL, so silently allowing it was a real exposure.
+    const openHandler = createMcpHandler(mockCtx, "");
+    await openHandler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: {} } as any, mockRes);
+    expect(statusCode).toBe(503);
+    expect(responseData.error.message).toMatch(/SCALARAI_MCP_API_KEY/);
+
+    const undefHandler = createMcpHandler(mockCtx, undefined);
+    await undefHandler({ body: { jsonrpc: "2.0", id: 1, method: "tools/list" }, headers: {} } as any, mockRes);
+    expect(statusCode).toBe(503);
   });
 });

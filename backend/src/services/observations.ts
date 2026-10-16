@@ -163,13 +163,9 @@ export class ObservationsService {
   }
 
   linkObservationToStrategy(observationId: string, strategyId: string): void {
-    const rows = this.db.rawQuery(`SELECT * FROM observations WHERE id = ?`, [observationId]) as ObservationRow[];
-    if (rows.length === 0) return;
-    const row = rows[0];
-    let metadata: Record<string, any> = {};
-    try { metadata = JSON.parse(row.metadata || "{}"); } catch { metadata = {}; }
-    metadata.linkedStrategyId = strategyId;
-    this.db.rawQuery(`UPDATE observations SET metadata = ? WHERE id = ?`, [JSON.stringify(metadata), observationId]);
+    // Previously called rawQuery("UPDATE ...") - rawQuery rejects non-SELECT input,
+    // so this write never executed and the observation stayed unlinked.
+    this.db.updateObservationMetadata(observationId, { linkedStrategyId: strategyId });
   }
 
   getObservationsForStrategy(strategyId: string): Observation[] {

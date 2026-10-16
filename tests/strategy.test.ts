@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { StrategyMode } from "../backend/src/types";
 import {
   calculateEMA,
   calculateRSI,
@@ -39,7 +40,7 @@ const baseCtx = (ticks: any[] = []) =>
       id: "ai_adaptive",
       name: "AI Adaptive",
       description: "",
-      mode: "AI_ADAPTIVE",
+      mode: StrategyMode.AI_ADAPTIVE,
       rules: {},
       createdAt: "",
       updatedAt: "",
@@ -120,7 +121,7 @@ describe("evaluateStrategy", () => {
     const ctx = baseCtx([]);
     ctx.openTradesCount = 3;
     const config = { maxTrades: 3, tradingMode: "Scalping" as const };
-    const signal = evaluateStrategy("TREND_FOLLOWING", ctx, config as any);
+    const signal = evaluateStrategy(StrategyMode.TREND_FOLLOWING, ctx, config as any);
     expect(signal.type).toBe("HOLD");
   });
 
@@ -130,14 +131,14 @@ describe("evaluateStrategy", () => {
     const ctx = baseCtx(ticks);
     ctx.openTradesCount = 0;
     const config = { maxTrades: 3, tradingMode: "Scalping" as const };
-    const signal = evaluateStrategy("TREND_FOLLOWING", ctx, config as any);
+    const signal = evaluateStrategy(StrategyMode.TREND_FOLLOWING, ctx, config as any);
     expect(["BUY", "SELL", "HOLD"]).toContain(signal.type);
   });
 });
 
 describe("evaluateStrategyBacktest", () => {
   it("returns object with required fields", () => {
-    const result = evaluateStrategyBacktest("TREND_FOLLOWING", 10);
+    const result = evaluateStrategyBacktest(StrategyMode.TREND_FOLLOWING, 10);
     expect(result).toHaveProperty("mode");
     expect(result).toHaveProperty("winRate");
     expect(result).toHaveProperty("totalProfit");

@@ -1,45 +1,81 @@
-import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
+import { SqliteDatabase } from "./sqlite";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "../services/defaults";
 import { StrategyMode } from "../types";
 
 const DB_PATH = path.join(process.cwd(), "backend", "data", "scalarai.sqlite");
+const SCHEMA_PATH = path.join(process.cwd(), "backend", "src", "db", "schema.sql");
 
-export function openDb(): InstanceType<typeof Database> {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  return db;
+export function openDb(): SqliteDatabase {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  return new SqliteDatabase(DB_PATH);
 }
 
-export function migrate(db: InstanceType<typeof Database>): void {
-  const schemaSql = fs.readFileSync(path.join(process.cwd(), "backend", "src", "db", "schema.sql"), "utf-8");
-  db.exec(schemaSql);
-  // Migration for existing tables: safely add symbol columns if missing
-  try { db.exec("ALTER TABLE trades ADD COLUMN symbol TEXT NOT NULL DEFAULT 'Step Index'"); } catch {}
-  try { db.exec("ALTER TABLE market_ticks ADD COLUMN symbol TEXT NOT NULL DEFAULT 'Step Index'"); } catch {}
-  try {
-    db.exec(`CREATE TABLE IF NOT EXISTS deals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      deal_ticket TEXT UNIQUE,
-      order_ticket TEXT,
-      symbol TEXT NOT NULL,
-      type TEXT NOT NULL,
-      volume REAL NOT NULL,
-      price REAL NOT NULL,
-      profit REAL NOT NULL,
-      close_time TEXT NOT NULL
-    );`);
-  } catch {}
+/**
+ * Ordered, idempotent schema migrations.
+ *
+ * `schema.sql` is re-applied on every boot (it is entirely `CREATE ... IF NOT
+ * EXISTS`), so it handles table creation. These migrations handle *alterations*
+ * to tables that may already exist in an older database file. Each one must be
+ * safe to run against a database that already has the change.
+ */
+const MIGRATIONS: Array<{ version: number; name: string; up: (db: SqliteDatabase) => void }> = [
+  {
+    version: 1,
+    name: "trades.symbol",
+    up: (db) => addColumnIfMissing(db, "trades", "symbol", `TEXT NOT NULL DEFAULT 'Step Index'`),
+  },
+  {
+    version: 2,
+    name: "market_ticks.symbol",
+    up: (db) => addColumnIfMissing(db, "market_ticks", "symbol", `TEXT NOT NULL DEFAULT 'Step Index'`),
+  },
+  {
+    version: 3,
+    name: "indexes for tick/candle/deal lookups",
+    up: (db) => {
+      // The dashboard always filters ticks by symbol *and* time; the previous
+      // single-column indexes forced SQLite to pick only one of them.
+      db.exec("CREATE INDEX IF NOT EXISTS idx_market_ticks_symbol_time ON market_ticks(symbol, time)");
+      db.exec("CREATE INDEX IF NOT EXISTS idx_market_candles_symbol_bucket ON market_candles(symbol, minute_bucket)");
+      db.exec("CREATE INDEX IF NOT EXISTS idx_deals_symbol_close_time ON deals(symbol, close_time)");
+      db.exec("CREATE INDEX IF NOT EXISTS idx_deals_close_time ON deals(close_time)");
+    },
+  },
+{
+    version: 4,
+    name: "trades.mt5_ticket",
+    up: (db) => addColumnIfMissing(db, "trades", "mt5_ticket", "INTEGER"),
+  },
+];
+
+const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
+
+function addColumnIfMissing(db: SqliteDatabase, table: string, column: string, definition: string): void {
+  if (db.tableColumns(table).includes(column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+export function migrate(db: SqliteDatabase): void {
+  // Base schema: creates anything missing, never destructive.
+  db.exec(fs.readFileSync(SCHEMA_PATH, "utf-8"));
+
+  const from = db.pragmaValue("user_version");
+  const pending = MIGRATIONS.filter((m) => m.version > from);
+  if (pending.length > 0) {
+    db.transaction(() => {
+      for (const migration of pending) {
+        migration.up(db);
+        db.exec(`PRAGMA user_version = ${migration.version}`);
+      }
+    });
+  }
+
   seedDefaults(db);
 }
 
-function seedDefaults(db: InstanceType<typeof Database>): void {
+function seedDefaults(db: SqliteDatabase): void {
   const config = getDefaultTradeConfig();
   const knowledge = getDefaultAiKnowledgeBase();
   const strategy = getDefaultAiSynthesizedStrategy();
@@ -77,10 +113,11 @@ function seedDefaults(db: InstanceType<typeof Database>): void {
   ).run(
     strategy.name,
     strategy.description,
-    strategy.mode,
+    strategy.mode as StrategyMode,
     JSON.stringify(strategy.rules),
     strategy.createdAt,
     strategy.updatedAt
   );
 }
 
+export { DB_PATH, SCHEMA_PATH, LATEST_VERSION };

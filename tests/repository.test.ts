@@ -1,129 +1,31 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
+import { SqliteDatabase } from "../backend/src/db/sqlite";
 import { ScalarAiDb } from "../backend/src/db/repository";
+import { StrategyMode } from "../backend/src/types";
 
-function createMemoryDb() {
-  const db = new Database(":memory:");
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  const schema = `
-    CREATE TABLE IF NOT EXISTS trades (
-      id TEXT PRIMARY KEY,
-      ticket INTEGER,
-      symbol TEXT NOT NULL DEFAULT 'Step Index',
-      type TEXT NOT NULL CHECK (type IN ('BUY', 'SELL')),
-      entry_price REAL NOT NULL,
-      close_price REAL,
-      lot_size REAL NOT NULL,
-      profit REAL NOT NULL DEFAULT 0,
-      status TEXT NOT NULL CHECK (status IN ('OPEN', 'CLOSED')),
-      open_time TEXT NOT NULL,
-      close_time TEXT,
-      strategy TEXT NOT NULL,
-      reason TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS system_logs (
-      id TEXT PRIMARY KEY,
-      timestamp TEXT NOT NULL,
-      level TEXT NOT NULL CHECK (level IN ('INFO', 'SUCCESS', 'WARNING', 'ERROR')),
-      source TEXT NOT NULL CHECK (source IN ('SERVER', 'EA', 'AI')),
-      message TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS market_ticks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      symbol TEXT NOT NULL DEFAULT 'Step Index',
-      time INTEGER NOT NULL,
-      price REAL NOT NULL,
-      direction TEXT NOT NULL CHECK (direction IN ('up', 'down', 'flat')),
-      open REAL,
-      high REAL,
-      low REAL,
-      close REAL,
-      velocity REAL,
-      buy_locked INTEGER NOT NULL DEFAULT 0,
-      sell_locked INTEGER NOT NULL DEFAULT 0,
-      spread REAL,
-      session TEXT
-    );
-    CREATE TABLE IF NOT EXISTS ai_knowledge (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      total_observations INTEGER NOT NULL DEFAULT 0,
-      global_average_speed REAL NOT NULL DEFAULT 0,
-      peak_velocity_registered REAL NOT NULL DEFAULT 0,
-      time_of_day_patterns TEXT NOT NULL DEFAULT '{}',
-      last_updated TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS ai_strategy (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      name TEXT NOT NULL DEFAULT 'AI Adaptive',
-      description TEXT NOT NULL DEFAULT '',
-      mode TEXT NOT NULL DEFAULT 'AI_ADAPTIVE',
-      rules TEXT NOT NULL DEFAULT '{}',
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      is_active INTEGER NOT NULL DEFAULT 0,
-      selected_strategy TEXT NOT NULL DEFAULT 'TREND_FOLLOWING',
-      lot_size REAL NOT NULL DEFAULT 0.1,
-      take_profit_points INTEGER NOT NULL DEFAULT 300,
-      stop_loss_points INTEGER NOT NULL DEFAULT 150,
-      trailing_stop_points INTEGER NOT NULL DEFAULT 100,
-      use_trailing_stop INTEGER NOT NULL DEFAULT 1,
-      max_trades INTEGER NOT NULL DEFAULT 3,
-      trading_mode TEXT NOT NULL DEFAULT 'Scalping',
-      is_ai_mode_enabled INTEGER NOT NULL DEFAULT 0,
-      mt5_path TEXT,
-      app_endpoint TEXT,
-      selected_assets TEXT NOT NULL DEFAULT '["Step Index"]'
-    );
-    CREATE TABLE IF NOT EXISTS ea_connections (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      is_ea_connected INTEGER NOT NULL DEFAULT 0,
-      client_ip TEXT,
-      last_ping TEXT,
-      broker TEXT,
-      account_number TEXT,
-      balance REAL,
-      symbol TEXT,
-      symbol_digits INTEGER,
-      symbol_tick_size REAL,
-      symbol_description TEXT,
-      spread REAL,
-      session TEXT,
-      margin REAL,
-      leverage INTEGER,
-      swap_long REAL,
-      swap_short REAL,
-      profit_calc_mode INTEGER
-    );
-    CREATE TABLE IF NOT EXISTS symbol_metadata (
-      symbol TEXT PRIMARY KEY,
-      description TEXT,
-      digits INTEGER,
-      tick_size REAL,
-      broker TEXT,
-      account_number TEXT,
-      last_connected TEXT
-    );
-    CREATE TABLE IF NOT EXISTS strategies (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL DEFAULT '',
-      mode TEXT NOT NULL DEFAULT 'CUSTOM',
-      rules TEXT NOT NULL DEFAULT '[]',
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-  `;
+/**
+ * Builds an in-memory database using the *real* schema.sql.
+ *
+ * The previous version inlined a hand-copied subset of the schema, which drifted:
+ * it was missing deals, market_candles, observations, the strategy tables and every
+ * index. Reading the shipped schema means the repository tests exercise the same
+ * DDL that production runs, and drift becomes impossible.
+ */
+function createMemoryDb(): SqliteDatabase {
+  const db = new SqliteDatabase(":memory:");
+  const schema = fs.readFileSync(
+    path.join(process.cwd(), "backend", "src", "db", "schema.sql"),
+    "utf-8"
+  );
   db.exec(schema);
   return db;
 }
 
 describe("ScalarAiDb", () => {
   let db: ScalarAiDb;
-  let sqlite: Database.Database;
+  let sqlite: SqliteDatabase;
 
   beforeEach(() => {
     sqlite = createMemoryDb();
@@ -140,7 +42,7 @@ describe("ScalarAiDb", () => {
       profit: 0,
       status: "OPEN",
       openTime: "2024-01-01T00:00:00Z",
-      strategy: "TREND_FOLLOWING",
+      strategy: StrategyMode.TREND_FOLLOWING,
       reason: "test",
     });
     const trades = db.getTrades();
@@ -158,7 +60,7 @@ describe("ScalarAiDb", () => {
       profit: 0,
       status: "OPEN",
       openTime: "2024-01-01T00:00:00Z",
-      strategy: "TREND_FOLLOWING",
+      strategy: StrategyMode.TREND_FOLLOWING,
       reason: "test",
     });
     db.closeTrade("t1", 99, 10);
@@ -178,7 +80,7 @@ describe("ScalarAiDb", () => {
       profit: 0,
       status: "OPEN",
       openTime: "2024-01-01T00:00:00Z",
-      strategy: "TREND_FOLLOWING",
+      strategy: StrategyMode.TREND_FOLLOWING,
       reason: "test",
     });
     db.resetTrades();
@@ -223,7 +125,7 @@ describe("ScalarAiDb", () => {
       id: "ai_adaptive",
       name: "AI Adaptive",
       description: "",
-      mode: "AI_ADAPTIVE",
+      mode: StrategyMode.AI_ADAPTIVE,
       rules: {},
       createdAt: "",
       updatedAt: "",
@@ -235,13 +137,136 @@ describe("ScalarAiDb", () => {
   it("rawQuery allows SELECT and rejects non-SELECT", () => {
     const select = db.rawQuery("SELECT * FROM trades");
     expect(select).toEqual([]);
-    const bad = db.rawQuery("DROP TABLE trades");
-    expect(bad).toEqual([]);
+
+    // A mutation must fail loudly. Returning [] silently made a dropped UPDATE
+    // look like an empty result set.
+    expect(() => db.rawQuery("DROP TABLE trades")).toThrow(/read-only/i);
+
+    // ...and the table must still be there.
+    expect(() => db.rawQuery("SELECT * FROM trades")).not.toThrow();
+
+    // Multi-statement injection must be rejected.
+    expect(() => db.rawQuery("SELECT 1; DROP TABLE trades")).toThrow(/single statement/i);
   });
 
   it("cleanupOldData returns counts", () => {
     const result = db.cleanupOldData();
     expect(result).toHaveProperty("deletedTicks");
     expect(result).toHaveProperty("deletedLogs");
+  });
+
+  it("persists observation metadata merges", () => {
+    db.insertObservation({
+      id: "o1",
+      symbol: "EURUSD",
+      timestamp: Date.now(),
+      direction: "up",
+      velocity: 1.2,
+      price: 100,
+      candle_id: null,
+      tags: "[]",
+      metadata: JSON.stringify({ origin: "manual" }),
+      created_at: new Date().toISOString(),
+    });
+
+    expect(db.updateObservationMetadata("o1", { linkedStrategyId: "s1" })).toBe(true);
+
+    const [row] = db.rawQuery("SELECT metadata FROM observations WHERE id = ?", ["o1"]) as Array<{
+      metadata: string;
+    }>;
+    const parsed = JSON.parse(row.metadata);
+    // The pre-existing key must survive the merge.
+    expect(parsed.origin).toBe("manual");
+    expect(parsed.linkedStrategyId).toBe("s1");
+
+    expect(db.updateObservationMetadata("missing", { a: 1 })).toBe(false);
+  });
+
+  it("reports table counts, schema version and integrity", () => {
+    const counts = db.getTableCounts();
+    expect(counts.trades).toBe(0);
+    expect(counts).toHaveProperty("market_ticks");
+    expect(counts).toHaveProperty("deals");
+    expect(db.getSchemaVersion()).toBe(0);
+    expect(db.integrityCheck()[0]).toEqual({ integrity_check: "ok" });
+  });
+
+  it("rolls back a failed transaction and keeps prior data", () => {
+    db.insertTrade({
+      id: "keep",
+      ticket: 1,
+      type: "BUY",
+      entryPrice: 100,
+      lotSize: 0.1,
+      profit: 0,
+      status: "OPEN",
+      openTime: "2024-01-01T00:00:00Z",
+      strategy: StrategyMode.TREND_FOLLOWING,
+      reason: "test",
+    });
+
+    expect(() =>
+      sqlite.transaction(() => {
+        db.insertTrade({
+          id: "doomed",
+          ticket: 2,
+          type: "BUY",
+          entryPrice: 100,
+          lotSize: 0.1,
+          profit: 0,
+          status: "OPEN",
+          openTime: "2024-01-01T00:00:00Z",
+          strategy: StrategyMode.TREND_FOLLOWING,
+          reason: "test",
+        });
+        throw new Error("boom");
+      })
+    ).toThrow("boom");
+
+    const ids = db.getTrades().map((t) => t.id);
+    expect(ids).toContain("keep");
+    expect(ids).not.toContain("doomed");
+  });
+
+  it("batches candle inserts atomically", () => {
+    db.insertCandlesBatch([
+      { symbol: "EURUSD", time: 1, open: 1, high: 2, low: 0.5, close: 1.5, volume: null, direction: "up", minute_bucket: 0 },
+      { symbol: "EURUSD", time: 60, open: 1.5, high: 2.5, low: 1, close: 2, volume: null, direction: "up", minute_bucket: 1 },
+    ]);
+    expect(db.getCandles("EURUSD")).toHaveLength(2);
+  });
+
+  it("normalises booleans and rejects non-finite numbers", () => {
+    // booleans are stored as 0/1 integers
+    sqlite.prepare("INSERT INTO trades (id, ticket, type, entry_price, lot_size, profit, status, open_time, strategy, reason) VALUES (?,?,?,?,?,?,?,?,?,?)").run("b1", 1, "BUY", 1, 0.1, 0, "OPEN", "t", "S", "r");
+    expect(db.getTrades()[0].lotSize).toBeCloseTo(0.1);
+
+    // undefined becomes NULL rather than throwing at the driver
+    const st = sqlite.prepare("SELECT ? AS v");
+    expect(st.get(undefined)).toEqual({ v: null });
+
+    // NaN/Infinity would be silently stored as NULL by the raw driver
+    expect(() =>
+      sqlite
+        .prepare("INSERT INTO trades (id, ticket, type, entry_price, lot_size, profit, status, open_time, strategy, reason) VALUES (?,?,?,?,?,?,?,?,?,?)")
+        .run("nan", 3, "BUY", 1, 0.1, NaN, "OPEN", "t", "S", "r")
+    ).toThrow(/non-finite/i);
+  });
+
+  it("stores and reads the deals ledger", () => {
+    db.insertDeal({
+      dealTicket: "D-1",
+      orderTicket: "O-1",
+      symbol: "EURUSD",
+      type: "buy",
+      volume: 0.1,
+      price: 1.1,
+      profit: 5,
+      closeTime: "2024-01-01T00:00:00Z",
+    });
+    const deals = db.getDeals();
+    expect(deals).toHaveLength(1);
+    expect(deals[0].dealTicket).toBe("D-1");
+    expect(deals[0].profit).toBeCloseTo(5);
   });
 });

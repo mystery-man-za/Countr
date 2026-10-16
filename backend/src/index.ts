@@ -69,14 +69,18 @@ async function startServer() {
     store.handleEaConfirmation.bind(store),
     store.handleEaPositionsReport.bind(store),
     store.queueEaConfigUpdate.bind(store),
-    store.handleEaLogs.bind(store)
+    store.handleEaLogs.bind(store),
+    // Was omitted, so every EA endpoint (tick injection, EA code upload, config,
+    // reset) ran with auth disabled. The MQ5 EA already sends a Bearer token.
+    process.env.SCALARAI_MCP_API_KEY
   );
   registerMarketRoutes(
     app,
     store.updateMarket.bind(store),
     () => store.config,
     store.ingestBulkCandles.bind(store),
-    () => store.getActiveSymbol()
+    () => store.getActiveSymbol(),
+    process.env.SCALARAI_MCP_API_KEY
   );
   registerSettingsRoutes(
     app,

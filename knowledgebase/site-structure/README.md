@@ -61,7 +61,7 @@ Previous refactors got confused because plan files (`knowledgebase/plans/backend
    - MCP route: always requires Bearer auth
    - Development without `SCALARAI_MCP_API_KEY`: all protected routes are open
 8. **Persistence**:
-   - SQLite via `better-sqlite3`
+   - SQLite via the built-in `node:sqlite` module (no native dependency)
    - Singleton `scalarAiDb` from `db/index.ts`
    - Schema in `db/schema.sql`
    - Migrations + legacy JSON data migration in `db/migrate.ts`

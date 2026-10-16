@@ -18,7 +18,7 @@ export function registerEaRoutes(
   onEaLogs?: (logs: EaLog[]) => void,
   apiKey?: string
 ) {
-  const authMiddleware = apiKey ? requireApiKey(apiKey) : undefined;
+  const authMiddleware = requireApiKey(apiKey);
 
   app.get("/api/ea/download", (req: Request, res: Response) => {
     try {
@@ -58,7 +58,7 @@ export function registerEaRoutes(
     }
   });
 
-  app.post("/api/ea/tick", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), async (req: Request, res: Response) => {
+  app.post("/api/ea/tick", authMiddleware, async (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const account = body.account;
@@ -244,7 +244,7 @@ refpoint=2
     res.send(templateCode);
   });
 
-  app.post("/api/ea/confirm", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/confirm", authMiddleware, (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const confirmations = Array.isArray(body.confirmations) ? body.confirmations : [body];
@@ -271,7 +271,7 @@ refpoint=2
     }
   });
 
-  app.post("/api/ea/positions", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/positions", authMiddleware, (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const positions = Array.isArray(body.positions) ? body.positions : [];
@@ -467,7 +467,7 @@ Read-Host -Prompt "Press Enter to exit"
     }
   });
 
-  app.post("/api/ea/reset", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/reset", authMiddleware, (req: Request, res: Response) => {
     try {
       const reset = resetCustomEaTemplate();
       if (reset) {
@@ -481,7 +481,7 @@ Read-Host -Prompt "Press Enter to exit"
     }
   });
 
-  app.post("/api/ea/code", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/code", authMiddleware, (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const code = typeof body.code === "string" ? body.code : "";
@@ -498,7 +498,7 @@ Read-Host -Prompt "Press Enter to exit"
     }
   });
 
-  app.post("/api/ea/config", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/config", authMiddleware, (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const config = body.config || body;
@@ -518,7 +518,7 @@ Read-Host -Prompt "Press Enter to exit"
     }
   });
 
-  app.post("/api/ea/logs", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), (req: Request, res: Response) => {
+  app.post("/api/ea/logs", authMiddleware, (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const logs = Array.isArray(body.logs) ? body.logs : [];

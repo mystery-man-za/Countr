@@ -33,7 +33,10 @@ export function useTradingControls(): TradingControls {
     const sent = sendWsMessage({ type: "close_all" });
     if (!sent) {
       try {
-        await fetch("/api/reset-stats", { method: "POST" });
+        // Was POST /api/reset-stats, which runs `DELETE FROM trades` - wiping the
+        // entire trade history (open *and* closed) whenever the socket was not
+        // open. Falling back to the close-all endpoint instead.
+        await fetch("/api/order/close_all", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
         fetchStatus();
       } catch (e) {
         console.error("Error closing positions:", e);

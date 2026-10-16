@@ -15,10 +15,10 @@ export function registerMarketRoutes(
   getActiveSymbol?: () => string,
   apiKey?: string
 ) {
-  const authMiddleware = apiKey ? requireApiKey(apiKey) : undefined;
+  const authMiddleware = requireApiKey(apiKey);
 
   // Single tick / candle update from EA or dashboard
-  app.post("/api/update-market", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), async (req: Request, res: Response) => {
+  app.post("/api/update-market", authMiddleware, async (req: Request, res: Response) => {
     try {
       const body = req.body || {};
 
@@ -65,7 +65,7 @@ export function registerMarketRoutes(
   });
 
   // Dedicated high-speed bulk candle upload from MT5 EA on startup or symbol attach
-  app.post("/api/market/bulk-candles", authMiddleware || ((req: Request, res: Response, next: NextFunction) => next()), async (req: Request, res: Response) => {
+  app.post("/api/market/bulk-candles", authMiddleware, async (req: Request, res: Response) => {
     try {
       const body = req.body || {};
       const candles = Array.isArray(body.candles) ? body.candles : [];

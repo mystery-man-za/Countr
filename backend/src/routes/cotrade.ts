@@ -532,21 +532,17 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   // ==========================================
 
   app.get("/api/db/stats", (req: Request, res: Response) => {
-    const db = scalarAiDb.getDbInstance();
-    const tickCount = (db.prepare("SELECT count(*) as count FROM market_ticks").get() as any)?.count || 0;
-    const candleCount = (db.prepare("SELECT count(*) as count FROM market_candles").get() as any)?.count || 0;
-    const tradeCount = (db.prepare("SELECT count(*) as count FROM trades").get() as any)?.count || 0;
-    const dealCount = (db.prepare("SELECT count(*) as count FROM deals").get() as any)?.count || 0;
-    const logCount = (db.prepare("SELECT count(*) as count FROM system_logs").get() as any)?.count || 0;
+    const counts = scalarAiDb.getTableCounts();
 
     res.json({
-      database: "SQLite 3",
+      database: "SQLite 3 (node:sqlite)",
+      schemaVersion: scalarAiDb.getSchemaVersion(),
       tables: {
-        ticks: tickCount,
-        candles: candleCount,
-        trades: tradeCount,
-        deals: dealCount,
-        logs: logCount,
+        ticks: counts.market_ticks ?? 0,
+        candles: counts.market_candles ?? 0,
+        trades: counts.trades ?? 0,
+        deals: counts.deals ?? 0,
+        logs: counts.system_logs ?? 0,
       },
       integrity: "OK",
     });
@@ -554,8 +550,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
 
   app.post("/api/db/vacuum", (req: Request, res: Response) => {
     try {
-      const db = scalarAiDb.getDbInstance();
-      db.exec("VACUUM;");
+      scalarAiDb.vacuum();
       res.json({ success: true, message: "Database vacuumed and optimized successfully" });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
@@ -564,9 +559,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
 
   app.get("/api/db/integrity", (req: Request, res: Response) => {
     try {
-      const db = scalarAiDb.getDbInstance();
-      const check = db.prepare("PRAGMA integrity_check;").all();
-      res.json({ success: true, check });
+      res.json({ success: true, check: scalarAiDb.integrityCheck() });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }

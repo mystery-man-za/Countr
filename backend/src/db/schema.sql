@@ -4,6 +4,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS trades (
   id TEXT PRIMARY KEY,
   ticket INTEGER,
+  mt5_ticket INTEGER,
   symbol TEXT NOT NULL DEFAULT 'Step Index',
   type TEXT NOT NULL CHECK (type IN ('BUY', 'SELL')),
   entry_price REAL NOT NULL,
@@ -235,6 +236,21 @@ CREATE TABLE IF NOT EXISTS strategy_symbol_performance (
   UNIQUE(strategy_id, symbol)
 );
 
+-- Closed deals ledger (gateway/MT5 history sync).
+-- Previously created from migrate.ts inside a try/catch, which meant a genuine
+-- failure here was silently swallowed; it now lives with the rest of the schema.
+CREATE TABLE IF NOT EXISTS deals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  deal_ticket TEXT UNIQUE,
+  order_ticket TEXT,
+  symbol TEXT NOT NULL,
+  type TEXT NOT NULL,
+  volume REAL NOT NULL,
+  price REAL NOT NULL,
+  profit REAL NOT NULL,
+  close_time TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_market_candles_symbol_time ON market_candles(symbol, time);
 CREATE INDEX IF NOT EXISTS idx_observations_symbol_timestamp ON observations(symbol, timestamp);
 CREATE INDEX IF NOT EXISTS idx_backtest_results_strategy ON backtest_results(strategy_id);
@@ -250,3 +266,6 @@ CREATE INDEX IF NOT EXISTS idx_system_logs_source ON system_logs(source);
 CREATE INDEX IF NOT EXISTS idx_market_ticks_time ON market_ticks(time);
 CREATE INDEX IF NOT EXISTS idx_market_ticks_symbol ON market_ticks(symbol);
 CREATE INDEX IF NOT EXISTS idx_strategies_mode ON strategies(mode);
+CREATE INDEX IF NOT EXISTS idx_deals_symbol ON deals(symbol);
+CREATE INDEX IF NOT EXISTS idx_deals_close_time ON deals(close_time);
+CREATE INDEX IF NOT EXISTS idx_market_candles_symbol_bucket ON market_candles(symbol, minute_bucket);

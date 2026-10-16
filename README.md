@@ -11,9 +11,9 @@ Local trading dashboard and strategy engine for MetaTrader 5, with an MCP interf
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22.5+ (24+ recommended) — persistence uses the built-in `node:sqlite` module, so there is no native dependency to compile
 - npm
-- SQLite 3 — required at runtime for local persistence (`better-sqlite3` is used; prebuilt binaries are downloaded during `npm install` on most platforms)
+- SQLite 3 — required at runtime for local persistence (bundled with Node; no external SQLite install required)
 - MetaTrader 5 with the generated EA attached to a chart
 
 ## Project structure
