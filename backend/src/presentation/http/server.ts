@@ -29,10 +29,12 @@ import { scalarAiDb } from "../../infrastructure/db";
 import { rateLimit } from "./middleware/rateLimit";
 
 dotenv.config();
-process.env.PORT = process.env.PORT || "3000";
+
+import { loadConfig } from "../../config";
+const cfg = loadConfig();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = cfg.port;
 
 app.use(express.json());
 app.use(corsMiddleware);
@@ -72,7 +74,7 @@ async function startServer() {
     store.handleEaLogs.bind(store),
     // Was omitted, so every EA endpoint (tick injection, EA code upload, config,
     // reset) ran with auth disabled. The MQ5 EA already sends a Bearer token.
-    process.env.SCALARAI_MCP_API_KEY
+    cfg.mcpApiKey
   );
   registerMarketRoutes(
     app,
@@ -80,7 +82,7 @@ async function startServer() {
     () => store.config,
     store.ingestBulkCandles.bind(store),
     () => store.getActiveSymbol(),
-    process.env.SCALARAI_MCP_API_KEY
+    cfg.mcpApiKey
   );
   registerSettingsRoutes(
     app,
@@ -96,7 +98,7 @@ async function startServer() {
       store.broadcastToDashboards({ type: "webrequest_test", testState: store.getWebRequestTest() });
       store.addLog("SERVER", report.status === "success" ? "SUCCESS" : "WARNING", `WebRequest verification report: ${report.status.toUpperCase()} - ${report.details}`);
     },
-    process.env.SCALARAI_MCP_API_KEY
+    cfg.mcpApiKey
   );
   registerTradeRoutes(
     app,
@@ -110,7 +112,7 @@ async function startServer() {
       modifyTrade: store.modifyTrade.bind(store),
     },
     undefined,
-    process.env.SCALARAI_MCP_API_KEY
+    cfg.mcpApiKey
   );
   registerAiRoutes(app, () => ({
     status: store.getAiKnowledgeBase().totalObservations >= 20 ? "optimized" : "calibrating",
@@ -121,7 +123,7 @@ async function startServer() {
     candleStream: getSymbolState(store.getSymbolStates(), store.getActiveSymbol()).ticks,
     averageVelocity: store.getAiKnowledgeBase().globalAverageSpeed,
   }));
-  registerMcpRoute(app, store.buildMcpContext(), process.env.SCALARAI_MCP_API_KEY);
+  registerMcpRoute(app, store.buildMcpContext(), cfg.mcpApiKey);
   registerStatusRoute(
     app,
     store.getFullStatusPayload.bind(store),
@@ -129,7 +131,7 @@ async function startServer() {
       store.switchSymbol(symbol);
     },
     store.getAndClearPendingOrders.bind(store),
-    process.env.SCALARAI_MCP_API_KEY
+    cfg.mcpApiKey
   );
   registerHealthRoutes(app);
   registerStrategyRoutes(app);
@@ -142,7 +144,7 @@ async function startServer() {
     res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });
   });
 
-  if (process.env.NODE_ENV !== "production") {
+  if (cfg.nodeEnv !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: false },
       appType: "spa",
