@@ -275,6 +275,8 @@ void PushTick()
    if(!SymbolInfoTick(g_activeSymbol, tick)) return;
    
    double spread = (tick.ask - tick.bid);
+   int digits = (int)SymbolInfoInteger(g_activeSymbol, SYMBOL_DIGITS);
+   double tickSize = SymbolInfoDouble(g_activeSymbol, SYMBOL_TRADE_TICK_SIZE);
    string payload = StringFormat(
       "{"
       "\"symbol\":\"%s\","
@@ -283,7 +285,9 @@ void PushTick()
       "\"last\":%.5f,"
       "\"volume\":%I64u,"
       "\"spread\":%.5f,"
-      "\"time\":%I64u"
+      "\"time\":%I64u,"
+      "\"digits\":%d,"
+      "\"tickSize\":%.8f"
       "}",
       g_activeSymbol,
       tick.bid,
@@ -291,7 +295,9 @@ void PushTick()
       tick.last,
       tick.volume,
       spread,
-      tick.time
+      tick.time,
+      digits,
+      tickSize
    );
 
    string resp;
@@ -554,6 +560,12 @@ void PollAndExecuteCommands()
             errorMsg = "Modify failed";
          }
       }
+   }
+
+   else if(action == "CONFIG_UPDATE")
+   {
+      // Runtime config push: persist command acknowledgement and report state
+      success = true;
    }
 
    string confirmPayload = StringFormat(
