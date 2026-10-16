@@ -2,6 +2,7 @@ import { Request, Response, Application } from "express";
 import { AppStore } from "../../application/services/app-store";
 import { GatewayManager } from "../../../gateway/gateway-manager";
 import { scalarAiDb } from "../../composition";
+import { toggleTrading } from "../../application/commands/control.commands";
 import {
   sma,
   ema,
@@ -519,7 +520,7 @@ export function registerCotradeRoutes(
   app.post("/api/bot/toggle", async (req: Request, res: Response) => {
     const { active } = req.body || {};
     const newState = active !== undefined ? !!active : store.getTradingState() !== "active";
-    await store.toggleTrading(newState);
+    await (async () => { toggleTrading(store, newState); })();
     res.json({ success: true, active: newState, state: store.getTradingState() });
   });
 

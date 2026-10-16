@@ -18,7 +18,7 @@ import { closeSimulatedPosition } from "../application/services/trade-execution"
 import { TradeRecord } from "../../shared/types";
 import { scalarAiDb } from "../composition";
 import { rateLimit } from "./middleware/rateLimit";
-import { switchActiveSymbol } from "../application/commands/control.commands";
+import { switchActiveSymbol, toggleTrading, resetTradeStats } from "../application/commands/control.commands";
 
 dotenv.config();
 
@@ -158,7 +158,7 @@ async function startServer() {
         if (msg.type === "ping") {
           ws.send(JSON.stringify({ type: "pong", clientTime: msg.clientTime, serverTime: Date.now() }));
         } else if (msg.type === "toggle_trade") {
-          store.toggleTrading(!store.config.isActive);
+          toggleTrading(store, !store.config.isActive);
         } else if (msg.type === "close_all") {
           const tradeState = store.buildTradeState();
           store.trades.forEach((t: TradeRecord) => {
@@ -166,7 +166,7 @@ async function startServer() {
           });
           store.broadcastTradesUpdate();
         } else if (msg.type === "reset_stats") {
-          store.resetStats();
+          resetTradeStats(store);
         } else if (msg.type === "request_history") {
           const symbol = msg.payload?.symbol || "Step Index";
           const from = msg.payload?.from ? Number(msg.payload.from) : undefined;
