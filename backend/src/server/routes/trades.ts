@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, Application } from "express";
-import { isValidTradeType } from "../../../shared/utils/validators";
+import { isValidTradeType } from "../../shared/utils/validators";
 import { requireApiKey } from "../middleware/auth";
-import { TradeRecord } from "../../../shared/types";
+import { TradeRecord } from "../../shared/types";
 
 export interface TradeRouteHandlers {
   toggleTrade: (isActive: boolean) => void;

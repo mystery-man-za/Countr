@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, Application } from "express";
-import { scalarAiDb } from "../../../composition";
-import { TradeConfig, UpdateMarketPayload, MarketCandleRow, ObservationRow } from "../../../shared/types";
+import { scalarAiDb } from "../../composition";
+import { TradeConfig, UpdateMarketPayload, MarketCandleRow, ObservationRow } from "../../shared/types";
 import { requireApiKey } from "../middleware/auth";
 
 export function registerMarketRoutes(

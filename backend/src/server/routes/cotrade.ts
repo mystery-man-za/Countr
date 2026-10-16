@@ -1,7 +1,7 @@
 import { Request, Response, Application } from "express";
-import { AppStore } from "../../../application/services/app-store";
-import { GatewayManager } from "../../../gateway/gateway-manager";
-import { scalarAiDb } from "../../../composition";
+import { AppStore } from "../../application/services/app-store";
+import { GatewayManager } from "../../gateway/gateway-manager";
+import { scalarAiDb } from "../../composition";
 import {
   sma,
   ema,
@@ -12,7 +12,7 @@ import {
   scanCandlePatterns,
   runBacktest,
   Bar,
-} from "../../../application/services/research-engine";
+} from "../../application/services/research-engine";
 
 export function registerCotradeRoutes(
   app: Application,
