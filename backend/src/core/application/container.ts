@@ -39,8 +39,10 @@ export interface AppContainer {
 }
 
 /**
- * Composition root placeholder. Real wiring (db repos, WS bridge, EA engine)
- * happens in `backend/src/composition.ts` once listeners are registered.
+ * Builds the application container from a config and a set of port adapters.
+ *
+ * `backend/src/composition.ts` is the runtime composition root that supplies the
+ * concrete adapters; this module only defines the shape and the factory.
  */
 export function buildContainer(
   config: AppConfig,
