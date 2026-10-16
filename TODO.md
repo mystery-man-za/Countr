@@ -5,11 +5,11 @@ Each stage must keep `npm run test`, `npx tsc --noEmit` (strict), `npm run build
 
 ## Status
 - Stage 0-2: DONE (commit ee4b871 + earlier)
-- Stage 3: IN PROGRESS
-- Stage 4: scaffold done (entry exists)
+- Stage 3: IN PROGRESS (AppStore + knowledge/backtest/strategy-research injection; ports introduced)
+- Stage 4: DONE (cli/app + serve/doctor; commands wired)
 - Stage 5: composition root partial
-- Stage 6: scaffold pending
-- Stage 7: baseline coverage at 55 tests
+- Stage 6: IN PROGRESS (plugins/ dir; registry TODO)
+- Stage 7: IN PROGRESS (indicators test added; layering audit passes at 0 violations)
 
 ## Stage 0 — Baseline & guardrails
 - [x] Golden test suite (tests/*.test.ts) passing
