@@ -24,7 +24,9 @@ export function registerStrategyRoutes(app: Application) {
         category: "custom",
         tags: ["custom"],
         defaultConfig: {},
-        performance: analyzeStrategyPerformance(s.id),
+        performance: s.id.startsWith("custom_")
+          ? null
+          : analyzeStrategyPerformance(s.id),
       }));
 
       res.json([...templates, ...customStrategies]);
