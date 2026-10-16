@@ -14,7 +14,12 @@ import {
   Bar,
 } from "../../../application/services/research-engine";
 
-export function registerCotradeRoutes(app: Application, store: AppStore, gateway: GatewayManager) {
+export function registerCotradeRoutes(
+  app: Application,
+  store: AppStore,
+  gateway: GatewayManager,
+  db: typeof scalarAiDb = scalarAiDb
+) {
   // ==========================================
   // 1. ACCOUNT, TERMINAL & PORTFOLIO ROUTES
   // ==========================================
@@ -175,7 +180,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   app.get("/api/candles/:symbol", (req: Request, res: Response) => {
     const sym = req.params.symbol;
     const limit = Math.min(Number(req.query.count || 200), 1000);
-    const candles = scalarAiDb.getCandles(sym, undefined, undefined, limit);
+    const candles = db.getCandles(sym, undefined, undefined, limit);
     res.json({
       symbol: sym,
       timeframe: req.query.timeframe || "M1",
@@ -355,7 +360,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   });
 
   app.get("/api/history/deals", (req: Request, res: Response) => {
-    const deals = scalarAiDb.getDeals(100);
+    const deals = db.getDeals(100);
     res.json({ count: deals.length, deals });
   });
 
@@ -405,7 +410,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
         initialBalance = 10000,
       } = req.body || {};
 
-      let candles = scalarAiDb.getCandles(symbol, undefined, undefined, Number(candleCount));
+      let candles = db.getCandles(symbol, undefined, undefined, Number(candleCount));
       if (candles.length < 50) {
         let base = 1250.0;
         const fakeCandles: any[] = [];
@@ -453,7 +458,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   app.post("/api/research/pattern-scan", (req: Request, res: Response) => {
     try {
       const { symbol = "Step Index", count = 100 } = req.body || {};
-      const candles = scalarAiDb.getCandles(symbol, undefined, undefined, Number(count));
+      const candles = db.getCandles(symbol, undefined, undefined, Number(count));
       const bars: Bar[] = candles.map((c) => ({
         time: c.time,
         open: c.open,
@@ -471,7 +476,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   app.post("/api/research/indicator", (req: Request, res: Response) => {
     try {
       const { symbol = "Step Index", indicator = "rsi", period = 14, count = 100 } = req.body || {};
-      const candles = scalarAiDb.getCandles(symbol, undefined, undefined, Number(count));
+      const candles = db.getCandles(symbol, undefined, undefined, Number(count));
       const closes = candles.map((c) => c.close);
       let values: any = null;
 
@@ -532,11 +537,11 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
   // ==========================================
 
   app.get("/api/db/stats", (req: Request, res: Response) => {
-    const counts = scalarAiDb.getTableCounts();
+    const counts = db.getTableCounts();
 
     res.json({
       database: "SQLite 3 (node:sqlite)",
-      schemaVersion: scalarAiDb.getSchemaVersion(),
+      schemaVersion: db.getSchemaVersion(),
       tables: {
         ticks: counts.market_ticks ?? 0,
         candles: counts.market_candles ?? 0,
@@ -550,7 +555,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
 
   app.post("/api/db/vacuum", (req: Request, res: Response) => {
     try {
-      scalarAiDb.vacuum();
+      db.vacuum();
       res.json({ success: true, message: "Database vacuumed and optimized successfully" });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
@@ -559,7 +564,7 @@ export function registerCotradeRoutes(app: Application, store: AppStore, gateway
 
   app.get("/api/db/integrity", (req: Request, res: Response) => {
     try {
-      res.json({ success: true, check: scalarAiDb.integrityCheck() });
+      res.json({ success: true, check: db.integrityCheck() });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }

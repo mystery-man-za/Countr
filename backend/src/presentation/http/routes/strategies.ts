@@ -3,7 +3,7 @@ import { scalarAiDb } from "../../../composition";
 import { StrategyMode, StrategyRow, TradeRecord } from "../../../shared/types";
 import { STRATEGY_TEMPLATES, getStrategyTemplateById, createStrategyFromTemplate } from "../../../application/services/strategy-templates";
 
-export function registerStrategyRoutes(app: Application) {
+export function registerStrategyRoutes(app: Application, db: typeof scalarAiDb = scalarAiDb) {
   app.get("/api/strategies", (req: Request, res: Response) => {
     try {
       const templates = STRATEGY_TEMPLATES.map(t => ({
@@ -16,7 +16,7 @@ export function registerStrategyRoutes(app: Application) {
         defaultConfig: t.defaultConfig,
       }));
 
-      const customStrategies = scalarAiDb.getAllStrategies().map((s: StrategyRow) => ({
+      const customStrategies = db.getAllStrategies().map((s: StrategyRow) => ({
         id: s.id,
         name: s.name,
         description: s.description,
@@ -26,7 +26,7 @@ export function registerStrategyRoutes(app: Application) {
         defaultConfig: {},
         performance: s.id.startsWith("custom_")
           ? null
-          : analyzeStrategyPerformance(s.id),
+          : analyzeStrategyPerformance(s.id, db),
       }));
 
       res.json([...templates, ...customStrategies]);
@@ -51,11 +51,11 @@ export function registerStrategyRoutes(app: Application) {
         });
       }
 
-      const custom = scalarAiDb.getStrategyById(id);
+      const custom = db.getStrategyById(id);
       if (custom) {
         return res.json({
           ...custom,
-          performance: analyzeStrategyPerformance(id),
+          performance: analyzeStrategyPerformance(id, db),
         });
       }
 
@@ -73,7 +73,7 @@ export function registerStrategyRoutes(app: Application) {
         // Was `require(...)`, which throws "require is not defined" in this ESM
         // package - template-based strategy creation always failed with a 500.
         const strategy = createStrategyFromTemplate(templateId, overrides);
-        scalarAiDb.upsertAiStrategy(strategy);
+        db.upsertAiStrategy(strategy);
         return res.json({ success: true, strategy });
       }
 
@@ -91,7 +91,7 @@ export function registerStrategyRoutes(app: Application) {
         updatedAt: new Date().toISOString(),
       };
 
-      scalarAiDb.insertStrategy(strategy);
+      db.insertStrategy(strategy);
       res.json({ success: true, strategy });
     } catch (err: unknown) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) || "Failed to create strategy" });
@@ -99,9 +99,9 @@ export function registerStrategyRoutes(app: Application) {
   });
 }
 
-function analyzeStrategyPerformance(strategyId: string): { winRate: number; profitFactor: number; totalTrades: number } {
+function analyzeStrategyPerformance(strategyId: string, db: typeof scalarAiDb = scalarAiDb): { winRate: number; profitFactor: number; totalTrades: number } {
   try {
-    const allTrades = scalarAiDb.getTrades().filter((t: TradeRecord) => t.strategy === strategyId);
+    const allTrades = db.getTrades().filter((t: TradeRecord) => t.strategy === strategyId);
     const closedTrades = allTrades.filter((t: TradeRecord) => t.status === "CLOSED");
     const wins = closedTrades.filter((t: TradeRecord) => t.profit > 0);
     const losses = closedTrades.filter((t: TradeRecord) => t.profit <= 0);

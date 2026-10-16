@@ -7,18 +7,10 @@ import dotenv from "dotenv";
 import { corsMiddleware } from "./middleware/cors";
 import { loggerMiddleware } from "./middleware/logger";
 import { errorMiddleware } from "./middleware/error";
-import { registerEaRoutes } from "./routes/ea";
-import { registerMarketRoutes } from "./routes/market";
-import { registerSettingsRoutes } from "./routes/settings";
-import { registerTradeRoutes } from "./routes/trades";
-import { registerAiRoutes } from "./routes/ai";
 import { registerMcpRoute } from "./routes/mcp";
 import { registerStatusRoute } from "./routes/status";
-import { registerHealthRoutes } from "./routes/health";
-import { registerStrategyRoutes } from "./routes/strategies";
-import { registerCotradeRoutes } from "./routes/cotrade";
 import { GatewayManager } from "../../gateway/gateway-manager";
-import { registerGatewayRoutes } from "../../gateway/routes";
+import { registerPlugins } from "../../plugins/registry";
 import { createBridgeServer } from "../real-time/bridge";
 import { createDashboardServer } from "../real-time/dashboard";
 import { AppStore } from "../../application/services/app-store";
@@ -62,67 +54,16 @@ async function startServer() {
     }
   }, 3600000);
 
-  registerEaRoutes(
-    app,
-    store.getFullStatusPayload.bind(store),
-    () => store.config,
-    store.updateMarket.bind(store),
-    store.getPendingEaCommands.bind(store),
-    store.handleEaConfirmation.bind(store),
-    store.handleEaPositionsReport.bind(store),
-    store.queueEaConfigUpdate.bind(store),
-    store.handleEaLogs.bind(store),
-    // Was omitted, so every EA endpoint (tick injection, EA code upload, config,
-    // reset) ran with auth disabled. The MQ5 EA already sends a Bearer token.
-    cfg.mcpApiKey
-  );
-  registerMarketRoutes(
-    app,
-    store.updateMarket.bind(store),
-    () => store.config,
-    store.ingestBulkCandles.bind(store),
-    () => store.getActiveSymbol(),
-    cfg.mcpApiKey
-  );
-  registerSettingsRoutes(
-    app,
-    (params) => store.updateSettings(params),
-    () => store.config,
-    () => store.getWebRequestTest(),
-    () => {
-      store.updateWebRequestTest({ status: "pending", triggerTest: true, lastTested: new Date().toISOString(), details: "Verification probe initiated. Waiting for MT5 bridge..." });
-      store.broadcastToDashboards({ type: "webrequest_test", testState: store.getWebRequestTest() });
-    },
-    (report) => {
-      store.updateWebRequestTest({ status: report.status as "idle" | "pending" | "success" | "failed", error: report.error || "", details: report.details || "", lastTested: new Date().toISOString(), triggerTest: false });
-      store.broadcastToDashboards({ type: "webrequest_test", testState: store.getWebRequestTest() });
-      store.addLog("SERVER", report.status === "success" ? "SUCCESS" : "WARNING", `WebRequest verification report: ${report.status.toUpperCase()} - ${report.details}`);
-    },
-    cfg.mcpApiKey
-  );
-  registerTradeRoutes(
-    app,
-    {
-      toggleTrade: (isActive: boolean) => store.toggleTrading(isActive),
-      resetStats: () => store.resetStats(),
-      getTrades: () => store.trades,
-      placeTrade: store.placeTrade.bind(store),
-      closeTrade: store.closeTrade.bind(store),
-      closeAllTrades: store.closeAllTrades.bind(store),
-      modifyTrade: store.modifyTrade.bind(store),
-    },
-    undefined,
-    cfg.mcpApiKey
-  );
-  registerAiRoutes(app, () => ({
-    status: store.getAiKnowledgeBase().totalObservations >= 20 ? "optimized" : "calibrating",
-    message: store.getAiKnowledgeBase().totalObservations >= 20 ? "Quantitative baseline calibrated." : "AI is analyzing market speed baseline... Awaiting sufficient expert data stream from MetaTrader 5 terminal.",
-    count: store.getAiKnowledgeBase().totalObservations,
-    aiKnowledgeBase: store.getAiKnowledgeBase(),
-    aiSynthesizedStrategy: store.getAiSynthesizedStrategy(),
-    candleStream: getSymbolState(store.getSymbolStates(), store.getActiveSymbol()).ticks,
-    averageVelocity: store.getAiKnowledgeBase().globalAverageSpeed,
-  }));
+  const gateway = new GatewayManager(store);
+
+  const pluginContainer = {
+    config: cfg,
+    store,
+    gateway,
+    db: scalarAiDb,
+    cfg,
+  } as any;
+
   registerMcpRoute(app, store.buildMcpContext(), cfg.mcpApiKey);
   registerStatusRoute(
     app,
@@ -133,12 +74,8 @@ async function startServer() {
     store.getAndClearPendingOrders.bind(store),
     cfg.mcpApiKey
   );
-  registerHealthRoutes(app);
-  registerStrategyRoutes(app);
 
-  const gateway = new GatewayManager(store);
-  registerGatewayRoutes(app, gateway);
-  registerCotradeRoutes(app, store, gateway);
+  registerPlugins(app, pluginContainer);
 
   app.all("/api/*", (req: Request, res: Response) => {
     res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });

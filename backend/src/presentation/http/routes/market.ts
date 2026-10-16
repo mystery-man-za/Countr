@@ -13,7 +13,8 @@ export function registerMarketRoutes(
     metadata?: { digits?: number; tickSize?: number }
   ) => void,
   getActiveSymbol?: () => string,
-  apiKey?: string
+  apiKey?: string,
+  db: typeof scalarAiDb = scalarAiDb
 ) {
   const authMiddleware = requireApiKey(apiKey);
 
@@ -93,7 +94,7 @@ export function registerMarketRoutes(
             minute_bucket: Math.floor(timeMs / 60000) * 60000,
           };
         });
-        scalarAiDb.insertCandlesBatch(candleRows);
+        db.insertCandlesBatch(candleRows);
       }
 
       res.json({
@@ -117,17 +118,17 @@ export function registerMarketRoutes(
 
       let ticks;
       if (from && to) {
-        ticks = scalarAiDb.rawQuery(
+        ticks = db.rawQuery(
           "SELECT * FROM market_ticks WHERE symbol = ? AND time >= ? AND time <= ? ORDER BY time ASC LIMIT ?",
           [symbol, from, to, limit]
         );
       } else if (from) {
-        ticks = scalarAiDb.rawQuery(
+        ticks = db.rawQuery(
           "SELECT * FROM market_ticks WHERE symbol = ? AND time >= ? ORDER BY time ASC LIMIT ?",
           [symbol, from, limit]
         );
       } else {
-        ticks = scalarAiDb.getTicks(limit, symbol);
+        ticks = db.getTicks(limit, symbol);
       }
 
       res.json({
@@ -150,7 +151,7 @@ export function registerMarketRoutes(
       const to = req.query.to ? new Date(req.query.to as string).getTime() : undefined;
       const limit = Math.min(Number(req.query.limit) || 1000, 10000);
 
-      const rows = scalarAiDb.getCandles(symbol, from, to, limit);
+      const rows = db.getCandles(symbol, from, to, limit);
       const candles = rows.map((row: MarketCandleRow) => ({
         time: row.time,
         open: row.open,
@@ -170,7 +171,7 @@ export function registerMarketRoutes(
 
   app.get("/api/market/symbols", (_req: Request, res: Response) => {
     try {
-      const symbols = scalarAiDb.getKnownSymbols();
+      const symbols = db.getKnownSymbols();
       const active = getActiveSymbol ? getActiveSymbol() : "";
       res.json({ symbols, activeSymbol: active });
     } catch (err: unknown) {
@@ -188,7 +189,7 @@ export function registerMarketRoutes(
       const minVelocity = req.query.minVelocity ? Number(req.query.minVelocity) : undefined;
       const limit = Math.min(Number(req.query.limit) || 500, 5000);
 
-      let rows = scalarAiDb.getObservations(symbol, from, to, limit);
+      let rows = db.getObservations(symbol, from, to, limit);
 
       if (direction) {
         rows = rows.filter((row) => row.direction === direction);

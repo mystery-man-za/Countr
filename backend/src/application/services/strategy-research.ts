@@ -145,6 +145,20 @@ export function analyzeMarket(symbol: string, knowledge: AiKnowledgeBase): Marke
 }
 
 export function analyzeStrategyPerformance(mode: string, limit = 100, db: typeof scalarAiDb = scalarAiDb): StrategyPerformance {
+  if (typeof mode === "string" && mode.startsWith("custom_")) {
+    return {
+      mode,
+      winRate: 0,
+      profitFactor: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      maxDrawdown: 0,
+      totalTrades: 0,
+      bestPerformingHours: [],
+      worstPerformingHours: [],
+      recommendation: "Zero live trades: this custom strategy has zero live trades recorded.",
+    };
+  }
   const backtest = evaluateStrategyBacktest(mode as any, limit);
   const allTrades = db.getTrades().filter(t => t.strategy === mode);
   const closedTrades = allTrades.filter(t => t.status === "CLOSED");
