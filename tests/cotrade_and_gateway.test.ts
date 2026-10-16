@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
-import { registerCotradeRoutes } from "../backend/src/server/routes/cotrade";
+import { registerCotradeRoutes } from "../backend/src/core/server/routes/cotrade";
 import { registerGatewayRoutes } from "../backend/src/gateway/routes";
 import { GatewayManager } from "../backend/src/gateway/gateway-manager";
 import { AppStore } from "../backend/src/application/services/app-store";

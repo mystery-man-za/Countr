@@ -1,5 +1,5 @@
 import { Request, Response, Application } from "express";
-import { AiKnowledgeBase, AiSynthesizedStrategy, Tick, AiStudyFeedPayload } from "../../shared/types";
+import { AiKnowledgeBase, AiSynthesizedStrategy, Tick, AiStudyFeedPayload } from "../../../shared/types";
 
 export function registerAiRoutes(
   app: Application,

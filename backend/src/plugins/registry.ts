@@ -12,15 +12,15 @@ import type { GatewayManager } from "../gateway/gateway-manager";
 import type { AppStore } from "../application/services/app-store";
 import { scalarAiDb } from "../composition";
 import { getSymbolState } from "../application/services/market-ingestion";
-import { registerEaRoutes } from "../server/routes/ea";
-import { registerMarketRoutes } from "../server/routes/market";
-import { registerSettingsRoutes } from "../server/routes/settings";
-import { registerTradeRoutes } from "../server/routes/trades";
-import { registerAiRoutes } from "../server/routes/ai";
-import { registerHealthRoutes } from "../server/routes/health";
-import { registerStrategyRoutes } from "../server/routes/strategies";
+import { registerEaRoutes } from "../core/server/routes/ea";
+import { registerMarketRoutes } from "../core/server/routes/market";
+import { registerSettingsRoutes } from "../core/server/routes/settings";
+import { registerTradeRoutes } from "../core/server/routes/trades";
+import { registerAiRoutes } from "../core/server/routes/ai";
+import { registerHealthRoutes } from "../core/server/routes/health";
+import { registerStrategyRoutes } from "../core/server/routes/strategies";
 import { registerGatewayRoutes } from "../gateway/routes";
-import { registerCotradeRoutes } from "../server/routes/cotrade";
+import { registerCotradeRoutes } from "../core/server/routes/cotrade";
 
 export type PluginRegistration = (app: Application, container: AppContainer) => void;
 

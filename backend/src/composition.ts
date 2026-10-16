@@ -1,5 +1,5 @@
 import { loadConfig } from "./config";
-import { scalarAiDb } from "./infrastructure/db";
+import { scalarAiDb } from "./core/database";
 
 export { scalarAiDb };
 

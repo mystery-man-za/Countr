@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, Application } from "express";
 import { requireApiKey } from "../middleware/auth";
-import { FullStatusPayload, BridgeOrder } from "../../shared/types";
+import { FullStatusPayload, BridgeOrder } from "../../../shared/types";
 
 export function registerStatusRoute(
   app: Application,

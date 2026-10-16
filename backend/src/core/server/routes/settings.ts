@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, Application } from "express";
-import { isValidStrategyMode, isValidTradingMode } from "../../shared/utils/validators";
+import { isValidStrategyMode, isValidTradingMode } from "../../../shared/utils/validators";
 import { requireApiKey } from "../middleware/auth";
-import { TradeConfig } from "../../shared/types";
+import { TradeConfig } from "../../../shared/types";
 
 export function registerSettingsRoutes(
   app: Application,

@@ -9,20 +9,20 @@ import { loggerMiddleware } from "./middleware/logger";
 import { errorMiddleware } from "./middleware/error";
 import { registerMcpRoute } from "./routes/mcp";
 import { registerStatusRoute } from "./routes/status";
-import { GatewayManager } from "../gateway/gateway-manager";
-import { registerPlugins } from "../plugins/registry";
+import { GatewayManager } from "../../gateway/gateway-manager";
+import { registerPlugins } from "../../plugins/registry";
 import { createBridgeServer } from "./real-time/bridge";
 import { createDashboardServer } from "./real-time/dashboard";
-import { AppStore } from "../application/services/app-store";
-import { closeSimulatedPosition } from "../application/services/trade-execution";
-import { TradeRecord } from "../shared/types";
-import { getSymbolState } from "../application/services/market-ingestion";
-import { scalarAiDb } from "../composition";
+import { AppStore } from "../../application/services/app-store";
+import { closeSimulatedPosition } from "../../application/services/trade-execution";
+import { TradeRecord } from "../../shared/types";
+import { getSymbolState } from "../../application/services/market-ingestion";
+import { scalarAiDb } from "../../composition";
 import { rateLimit } from "./middleware/rateLimit";
 
 dotenv.config();
 
-import { loadConfig } from "../config";
+import { loadConfig } from "../../config";
 const cfg = loadConfig();
 
 const app = express();

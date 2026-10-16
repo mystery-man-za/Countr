@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { WebSocket } from "ws";
 import { createServer } from "http";
-import { createDashboardServer } from "../backend/src/server/real-time/dashboard";
+import { createDashboardServer } from "../backend/src/core/server/real-time/dashboard";
 
 describe("Dashboard WebSocket", () => {
   it("sends init message on connection", async () => {

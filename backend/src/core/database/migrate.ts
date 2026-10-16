@@ -4,8 +4,8 @@ import { SqliteDatabase } from "./sqlite";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "../../application/services/defaults";
 import { StrategyMode } from "../../shared/types";
 
-const DB_PATH = path.join(process.cwd(), "backend", "src", "infrastructure", "db", "data", "scalarai.sqlite");
-const SCHEMA_PATH = path.join(process.cwd(), "backend", "src", "infrastructure", "db", "schema.sql");
+const DB_PATH = path.join(process.cwd(), "backend", "src", "core", "database", "data", "scalarai.sqlite");
+const SCHEMA_PATH = path.join(process.cwd(), "backend", "src", "core", "database", "schema.sql");
 
 export function openDb(): SqliteDatabase {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });

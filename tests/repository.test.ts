@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import fs from "fs";
 import path from "path";
-import { SqliteDatabase } from "../backend/src/infrastructure/db/sqlite";
-import { ScalarAiDb } from "../backend/src/infrastructure/db/repository";
+import { SqliteDatabase } from "../backend/src/core/database/sqlite";
+import { ScalarAiDb } from "../backend/src/core/database/repository";
 import { StrategyMode } from "../backend/src/shared/types";
 
 /**
@@ -16,7 +16,7 @@ import { StrategyMode } from "../backend/src/shared/types";
 function createMemoryDb(): SqliteDatabase {
   const db = new SqliteDatabase(":memory:");
   const schema = fs.readFileSync(
-    path.join(process.cwd(), "backend", "src", "infrastructure", "db", "schema.sql"),
+    path.join(process.cwd(), "backend", "src", "core", "database", "schema.sql"),
     "utf-8"
   );
   db.exec(schema);
