@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isReadOnlySql } from "../backend/src/mcp_server";
+import { isReadOnlySql } from "../backend/src/presentation/mcp/handler";
 
 describe("isReadOnlySql", () => {
   it("allows simple SELECT", () => {
@@ -67,7 +67,7 @@ describe("isReadOnlySql", () => {
 
 describe("createMcpHandler integration", () => {
   it("initializes and lists extended tools", async () => {
-    const { createMcpHandler } = await import("../backend/src/mcp_server");
+    const { createMcpHandler } = await import("../backend/src/presentation/mcp/handler");
     const mockCtx: any = {
       getStatus: () => ({ activeSymbol: "Boom 1000", symbolStates: [] }),
       getSymbols: () => [{ symbol: "Boom 1000", isConnected: true, currentPrice: 500, tickCount: 10 }],
@@ -109,7 +109,7 @@ describe("createMcpHandler integration", () => {
   });
 
   it("rejects unauthenticated and unconfigured requests", async () => {
-    const { createMcpHandler } = await import("../backend/src/mcp_server");
+    const { createMcpHandler } = await import("../backend/src/presentation/mcp/handler");
     const mockCtx: any = { getStatus: () => ({}), getSymbols: () => [], switchSymbol: () => {} };
 
     let responseData: any;

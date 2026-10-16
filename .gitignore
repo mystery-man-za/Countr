@@ -7,8 +7,11 @@ coverage/
 .env*
 !.env.example
 backend/data/*.sqlite-shm
+backend/src/infrastructure/db/data/*.sqlite-shm
 backend/data/*.sqlite-wal
+backend/src/infrastructure/db/data/*.sqlite-wal
 backend/data/scalarai.sqlite
+backend/src/infrastructure/db/data/scalarai.sqlite
 
 # Preserve gateway and ea folders
 !gateway/

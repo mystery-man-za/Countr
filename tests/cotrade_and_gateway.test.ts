@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
-import { registerCotradeRoutes } from "../backend/src/routes/cotrade";
-import { registerGatewayRoutes } from "../gateway/routes";
-import { GatewayManager } from "../gateway/gateway-manager";
-import { AppStore } from "../backend/src/services/app-store";
+import { registerCotradeRoutes } from "../backend/src/presentation/http/routes/cotrade";
+import { registerGatewayRoutes } from "../backend/src/gateway/routes";
+import { GatewayManager } from "../backend/src/gateway/gateway-manager";
+import { AppStore } from "../backend/src/application/services/app-store";
 import fs from "fs";
 import path from "path";
 

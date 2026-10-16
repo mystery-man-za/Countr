@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Request, Response } from "express";
-import { registerStatusRoute } from "../backend/src/routes/status";
+import { registerStatusRoute } from "../backend/src/presentation/http/routes/status";
 
 function mockRes() {
   const jsonCalls: any[] = [];
@@ -76,7 +76,7 @@ describe("Status routes", () => {
   });
 
   it("POST /api/ea/tick returns config and pending commands", async () => {
-    const { registerEaRoutes } = await import("../backend/src/routes/ea");
+    const { registerEaRoutes } = await import("../backend/src/presentation/http/routes/ea");
     const getRoutes: Record<string, any> = {};
     const postRoutes: Record<string, any> = {};
 
@@ -153,7 +153,7 @@ describe("Status routes", () => {
   });
 
   it("GET /api/ea/code returns valid MQL5 code", async () => {
-    const { registerEaRoutes } = await import("../backend/src/routes/ea");
+    const { registerEaRoutes } = await import("../backend/src/presentation/http/routes/ea");
     const getRoutes: Record<string, any> = {};
 
     const app: any = {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { StrategyMode } from "../backend/src/types";
+import { StrategyMode } from "../backend/src/shared/types";
 import {
   calculateEMA,
   calculateRSI,
@@ -8,7 +8,7 @@ import {
   buildContext,
   evaluateStrategy,
   evaluateStrategyBacktest,
-} from "../backend/src/services/strategy";
+} from "../backend/src/application/services/strategy";
 
 const makeTick = (overrides: any = {}): any => ({
   time: Date.now(),
