@@ -40,8 +40,8 @@ export interface StrategyOptimizationSuggestion {
   expectedImprovement: string;
 }
 
-function getRecentTicks(symbol: string, limit = 200): Tick[] {
-  return scalarAiDb.rawQuery(
+function getRecentTicks(symbol: string, limit = 200, db: typeof scalarAiDb = scalarAiDb): Tick[] {
+  return db.rawQuery(
     "SELECT * FROM market_ticks WHERE symbol = ? ORDER BY time DESC LIMIT ?",
     [symbol, limit]
   ).reverse() as Tick[];
@@ -144,9 +144,9 @@ export function analyzeMarket(symbol: string, knowledge: AiKnowledgeBase): Marke
   };
 }
 
-export function analyzeStrategyPerformance(mode: string, limit = 100): StrategyPerformance {
+export function analyzeStrategyPerformance(mode: string, limit = 100, db: typeof scalarAiDb = scalarAiDb): StrategyPerformance {
   const backtest = evaluateStrategyBacktest(mode as any, limit);
-  const allTrades = scalarAiDb.getTrades().filter(t => t.strategy === mode);
+  const allTrades = db.getTrades().filter(t => t.strategy === mode);
   const closedTrades = allTrades.filter(t => t.status === "CLOSED");
   
   const wins = closedTrades.filter(t => t.profit > 0);
