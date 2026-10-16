@@ -482,7 +482,7 @@ export default function App() {
                   aiSynthesizedStrategy={aiSynthesizedStrategy}
                   strategiesList={strategiesList}
                   onToggleTradingExecution={toggleTradingExecution}
-                   onApplySettings={() => settings.applySettings(fetchStatus)}
+                   onApplySettings={(strategyOverride?: StrategyMode, mt5PathOverride?: string, appEndpointOverride?: string, tradingModeOverride?: "Scalping" | "Swing", selectedAssetsOverride?: string[], isAiModeEnabledOverride?: boolean) => { void settings.applySettings(fetchStatus, { strategyOverride, mt5PathOverride, appEndpointOverride, tradingModeOverride, selectedAssetsOverride, isAiModeEnabledOverride }); }}
                   selectedStrategy={config.selectedStrategy}
                 />
 
@@ -623,7 +623,7 @@ export default function App() {
               config={{ ...config, saveSuccess: settings.saveSuccess }}
               paramInput={settings.paramInput}
               selectedStrategy={config.selectedStrategy}
-              onApplySettings={() => settings.applySettings(fetchStatus)}
+              onApplySettings={(strategyOverride?: StrategyMode, mt5PathOverride?: string, appEndpointOverride?: string, tradingModeOverride?: "Scalping" | "Swing", selectedAssetsOverride?: string[], isAiModeEnabledOverride?: boolean) => { void settings.applySettings(fetchStatus, { strategyOverride, mt5PathOverride, appEndpointOverride, tradingModeOverride, selectedAssetsOverride, isAiModeEnabledOverride }); }}
               onSetParamInput={(patch) => settings.onParamInputChange(patch)}
               onSetConfig={(patch) => setConfig((prev) => ({ ...prev, ...patch }))}
             />
@@ -702,7 +702,7 @@ export default function App() {
             isVerifyingWebRequest={settings.isVerifyingWebRequest}
             copiedUrl={settings.copiedUrl}
             getAppBaseUrl={settings.getAppBaseUrl}
-            onApplySettings={() => settings.applySettings(fetchStatus)}
+            onApplySettings={(strategyOverride?: StrategyMode, mt5PathOverride?: string, appEndpointOverride?: string, tradingModeOverride?: "Scalping" | "Swing", selectedAssetsOverride?: string[], isAiModeEnabledOverride?: boolean) => { void settings.applySettings(fetchStatus, { strategyOverride, mt5PathOverride, appEndpointOverride, tradingModeOverride, selectedAssetsOverride, isAiModeEnabledOverride }); }}
             onSetParamInput={(patch) => settings.onParamInputChange(patch)}
             onTriggerWebRequestTest={settings.triggerWebRequestTest}
             onSetCopiedUrl={settings.setCopiedUrl}

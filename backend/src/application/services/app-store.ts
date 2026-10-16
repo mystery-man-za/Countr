@@ -699,6 +699,9 @@ export class AppStore implements AppStoreReadOnly {
     if (params.useTrailingStop !== undefined) this.tradeConfig.useTrailingStop = Boolean(params.useTrailingStop);
     if (params.maxTrades !== undefined) this.tradeConfig.maxTrades = Number(params.maxTrades);
     if (params.tradingMode !== undefined) this.tradeConfig.tradingMode = params.tradingMode;
+    if (params.selectedAssets !== undefined) this.tradeConfig.selectedAssets = params.selectedAssets;
+    if (params.mt5Path !== undefined) this.tradeConfig.mt5Path = params.mt5Path || undefined;
+    if (params.appEndpoint !== undefined) this.tradeConfig.appEndpoint = params.appEndpoint || undefined;
     if (params.isAiModeEnabled !== undefined) this.tradeConfig.isAiModeEnabled = Boolean(params.isAiModeEnabled);
     this.addLog("SERVER", "WARNING", "Strategy configurations changed. Running parameters updated.");
     persistSettings(this.tradeConfig);

@@ -90,7 +90,7 @@ export function evaluateTrendFollowing(ctx: StrategyContext, config: TradeConfig
   }
   
   // Bullish Trend condition: Fast EMA >= Slow EMA with RSI not extremely overbought
-  if (fastEma >= slowEma && rsi < 75) {
+  if (fastEma > slowEma && rsi < 75) {
     if (ctx.activeSellExists) {
       return {
         type: "BUY",
@@ -100,12 +100,12 @@ export function evaluateTrendFollowing(ctx: StrategyContext, config: TradeConfig
     }
     return {
       type: "BUY",
-      reason: `Trend Following Alignment: Fast EMA (${fastEma.toFixed(2)}) >= Slow EMA (${slowEma.toFixed(2)}), RSI: ${rsi.toFixed(1)}${velocity > 0 ? `, Speed: +${velocity.toFixed(3)}` : ""}`,
+      reason: `Trend Following Alignment: Fast EMA (${fastEma.toFixed(2)}) > Slow EMA (${slowEma.toFixed(2)}), RSI: ${rsi.toFixed(1)}${velocity > 0 ? `, Speed: +${velocity.toFixed(3)}` : ""}`,
       confidence: 0.8,
     };
   }
   // Bearish Trend condition: Fast EMA <= Slow EMA with RSI not extremely oversold
-  if (fastEma <= slowEma && rsi > 25) {
+  if (fastEma < slowEma && rsi > 25) {
     if (ctx.activeBuyExists) {
       return {
         type: "SELL",
@@ -115,7 +115,7 @@ export function evaluateTrendFollowing(ctx: StrategyContext, config: TradeConfig
     }
     return {
       type: "SELL",
-      reason: `Trend Following Alignment: Fast EMA (${fastEma.toFixed(2)}) <= Slow EMA (${slowEma.toFixed(2)}), RSI: ${rsi.toFixed(1)}${velocity < 0 ? `, Speed: ${velocity.toFixed(3)}` : ""}`,
+      reason: `Trend Following Alignment: Fast EMA (${fastEma.toFixed(2)}) < Slow EMA (${slowEma.toFixed(2)}), RSI: ${rsi.toFixed(1)}${velocity < 0 ? `, Speed: ${velocity.toFixed(3)}` : ""}`,
       confidence: 0.8,
     };
   }
@@ -127,17 +127,21 @@ export function evaluateMeanReversion(ctx: StrategyContext, config: TradeConfig)
   if (ctx.atr >= maxSafeAtr) return { type: "HOLD", reason: "ATR too high for mean reversion" };
   const { rsi, bands, currentPrice, acceleration } = ctx;
   
-  // Momentum confirmation: require deceleration for reversal signals
-  const isDecelerating = Math.abs(acceleration) < 0.01 || acceleration > 0.02;
+  // Momentum gates: previous code labelled `isDecelerating` as true whenever
+  // `acceleration > 0.02`, i.e. when momentum was *accelerating* rather than
+  // stalling. Split the two conditions so a signal is only allowed when the
+  // offending direction is no longer accelerating.
+  const stillDeclining = acceleration <= -0.02;
+  const stillRising = acceleration >= 0.02;
   
   if (currentPrice < bands.lower && rsi < 30) {
     if (ctx.activeSellExists) return { type: "HOLD", reason: "BUY blocked: opposite SELL lock active" };
-    if (!isDecelerating) return { type: "HOLD", reason: "Momentum still declining - waiting for deceleration" };
+    if (stillDeclining) return { type: "HOLD", reason: "Momentum still declining - waiting for deceleration" };
     return { type: "BUY", reason: `Oversold bounce: price ${currentPrice.toFixed(2)} < BB lower ${bands.lower.toFixed(2)}, RSI ${rsi.toFixed(1)}, accel ${acceleration.toFixed(4)}`, confidence: 0.7 };
   }
   if (currentPrice > bands.upper && rsi > 70) {
     if (ctx.activeBuyExists) return { type: "HOLD", reason: "SELL blocked: opposite BUY lock active" };
-    if (!isDecelerating) return { type: "HOLD", reason: "Momentum still rising - waiting for deceleration" };
+    if (stillRising) return { type: "HOLD", reason: "Momentum still rising - waiting for deceleration" };
     return { type: "SELL", reason: `Overbought fade: price ${currentPrice.toFixed(2)} > BB upper ${bands.upper.toFixed(2)}, RSI ${rsi.toFixed(1)}, accel ${acceleration.toFixed(4)}`, confidence: 0.7 };
   }
   return { type: "HOLD", reason: "No mean reversion signal" };

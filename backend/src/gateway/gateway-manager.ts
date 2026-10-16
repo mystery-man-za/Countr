@@ -58,10 +58,11 @@ export class GatewayManager {
     this.eaDetails = payload;
 
     // Update store EA connection state
+    // Heartbeat carries account health, not market prices. (The previous version
+    // passed `balance`/`equity` as bid/ask, which either violated the 0-guard or
+    // fed phantom prices downstream.)
     this.store.updateMarket({
       symbol: payload.symbol,
-      bid: payload.balance,
-      ask: payload.equity,
       balance: payload.balance,
       equity: payload.equity,
       broker: payload.broker || "MetaTrader 5 Broker",
@@ -93,11 +94,18 @@ export class GatewayManager {
     const bid = Number(payload.bid);
     const ask = Number(payload.ask);
     const symbol = payload.symbol || this.store.getActiveSymbol() || "Step Index";
+    // Only produce a market price when we have usable quotes; otherwise leave
+    // the last known price untouched instead of writing 0/NaN.
+    const hasBid = Number.isFinite(bid) && bid > 0;
+    const hasAsk = Number.isFinite(ask) && ask > 0;
+    const price = hasBid && hasAsk ? (bid + ask) / 2 : hasBid ? bid : hasAsk ? ask : undefined;
 
     this.store.updateMarket({
       symbol,
-      bid,
-      ask,
+      price,
+      bid: hasBid ? bid : undefined,
+      ask: hasAsk ? ask : undefined,
+      spread: hasBid && hasAsk ? Math.abs(ask - bid) : undefined,
     });
 
     return { received: true, symbol, time: payload.time || Date.now() };
@@ -139,8 +147,26 @@ export class GatewayManager {
    * Retrieve pending commands for the EA
    */
   public getPendingCommands(symbol?: string, magic?: number): EaCommand[] {
-    const pending = [...this.commandQueue];
-    this.commandQueue = [];
+    // Previously drained the entire queue regardless of the requested symbol, so
+    // an EA polling for symbol A would steal orders meant for symbol B. Filter
+    // by symbol (when supplied) and leave the rest queued.
+    if (!symbol) {
+      const pending = [...this.commandQueue];
+      this.commandQueue = [];
+      return pending;
+    }
+    const wanted = symbol.toLowerCase();
+    const pending: EaCommand[] = [];
+    const kept: EaCommand[] = [];
+    for (const cmd of this.commandQueue) {
+      const target = (cmd.symbol || "").toLowerCase();
+      if (target === wanted || target === "") {
+        pending.push(cmd);
+      } else {
+        kept.push(cmd);
+      }
+    }
+    this.commandQueue = kept;
     return pending;
   }
 
