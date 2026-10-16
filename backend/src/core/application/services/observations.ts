@@ -1,5 +1,5 @@
 import { scalarAiDb } from "../../composition";
-import { ObservationRow } from "../../shared/types";
+import { ObservationRow } from "../../../shared/types";
 
 export interface Observation {
   id: string;

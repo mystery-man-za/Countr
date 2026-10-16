@@ -1,5 +1,5 @@
-import { AppStore } from "../application/services/app-store";
-import { scalarAiDb } from "../composition";
+import { AppStore } from "../core/application/services/app-store";
+import { scalarAiDb } from "../core/composition";
 import { EaCommand, EaConfirmation, EaPosition } from "../shared/types";
 
 export interface GatewayHeartbeatPayload {

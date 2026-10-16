@@ -1,4 +1,4 @@
-import { loadConfig } from "../../config";
+import { loadConfig } from "../../core/config";
 
 /**
  * Optional long-running gateway daemon (`npm run daemon`).

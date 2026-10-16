@@ -1,5 +1,5 @@
 import { scalarAiDb } from "../../composition";
-import { Tick, AiKnowledgeBase } from "../../shared/types";
+import { Tick, AiKnowledgeBase } from "../../../shared/types";
 import { buildContext, evaluateStrategy, evaluateStrategyBacktest, StrategyContext } from "./strategy";
 
 export interface MarketAnalysis {

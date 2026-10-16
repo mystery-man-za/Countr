@@ -1,4 +1,4 @@
-import { Tick, TradeConfig } from "../shared/types";
+import { Tick, TradeConfig } from "../../shared/types";
 
 /**
  * Ports for the scalarai application layer.

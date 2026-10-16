@@ -1,5 +1,5 @@
 import { scalarAiDb } from "../../composition";
-import { StrategyMode, TradeConfig } from "../../shared/types";
+import { StrategyMode, TradeConfig } from "../../../shared/types";
 
 export interface BacktestCandle {
   time: number;

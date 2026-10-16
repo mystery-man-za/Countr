@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { SqliteDatabase } from "./sqlite";
-import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "../../application/services/defaults";
+import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "../application/services/defaults";
 import { StrategyMode } from "../../shared/types";
 
 const DB_PATH = path.join(process.cwd(), "backend", "src", "core", "database", "data", "scalarai.sqlite");

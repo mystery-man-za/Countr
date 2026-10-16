@@ -1,7 +1,7 @@
-import { Tick, EAConnectionDetails, CandleBar, MarketTelemetry, SymbolStateEntry, SymbolStates } from "../../shared/types";
-import { getMinuteBucket, nowEpochMs, nowIso8601 } from "../../shared/utils/time";
+import { Tick, EAConnectionDetails, CandleBar, MarketTelemetry, SymbolStateEntry, SymbolStates } from "../../../shared/types";
+import { getMinuteBucket, nowEpochMs, nowIso8601 } from "../../../shared/utils/time";
 
-export type { SymbolStates, SymbolStateEntry } from "../../shared/types";
+export type { SymbolStates, SymbolStateEntry } from "../../../shared/types";
 
 export function createSymbolStates(initialActiveSymbol = ""): SymbolStates {
   const map = new Map<string, SymbolStateEntry>();

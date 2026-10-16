@@ -1,4 +1,4 @@
-import { TradeConfig, TradeRecord, SystemLog, AiKnowledgeBase, AiSynthesizedStrategy, McpContext, EAConnectionDetails, Tick, FullStatusPayload, UpdateMarketPayload, BridgeOrder, AppStoreReadOnly, TradingState, BridgeState, CalibrationState, Observation, ObservationFilters, ObservationInsights, SymbolStateEntry, StrategyMode, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../shared/types";
+import { TradeConfig, TradeRecord, SystemLog, AiKnowledgeBase, AiSynthesizedStrategy, McpContext, EAConnectionDetails, Tick, FullStatusPayload, UpdateMarketPayload, BridgeOrder, AppStoreReadOnly, TradingState, BridgeState, CalibrationState, Observation, ObservationFilters, ObservationInsights, SymbolStateEntry, StrategyMode, EaCommand, EaConfirmation, EaPosition, EaLog } from "../../../shared/types";
 import { SymbolStates, createSymbolStates, createBlankSymbolState, getSymbolState, updateMarket as updateMarketState } from "./market-ingestion";
 import { scalarAiDb } from "../../composition";
 import { persistAiKnowledge, persistAiStrategy, persistSettings, persistEaConnection, loadStateFromDb, persistLog } from "./state-persistence";
@@ -7,7 +7,7 @@ import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesiz
 import { BacktestEngine, BacktestCandle } from "./strategy-backtest";
 import { createActor } from "xstate";
 import { WebSocket } from "ws";
-import { normalizeIp } from "../../shared/utils/ip";
+import { normalizeIp } from "../../../shared/utils/ip";
 import { tradingMachine, bridgeMachine, calibrationMachine, TradingMachineService, BridgeMachineService, CalibrationMachineService } from "./trading-machine";
 import { ObservationsService } from "./observations";
 

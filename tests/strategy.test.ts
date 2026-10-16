@@ -8,7 +8,7 @@ import {
   buildContext,
   evaluateStrategy,
   evaluateStrategyBacktest,
-} from "../backend/src/application/services/strategy";
+} from "../backend/src/core/application/services/strategy";
 
 const makeTick = (overrides: any = {}): any => ({
   time: Date.now(),

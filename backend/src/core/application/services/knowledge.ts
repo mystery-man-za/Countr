@@ -1,5 +1,5 @@
 import { scalarAiDb } from "../../composition";
-import { AiKnowledgeBase } from "../../shared/types";
+import { AiKnowledgeBase } from "../../../shared/types";
 
 export interface KnowledgeUpdateResult {
   totalObservations: number;

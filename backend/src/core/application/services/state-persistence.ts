@@ -5,7 +5,7 @@ import {
   AiKnowledgeBase,
   AiSynthesizedStrategy,
   EAConnectionDetails,
-} from "../../shared/types";
+} from "../../../shared/types";
 import { scalarAiDb } from "../../composition";
 import { getDefaultTradeConfig, getDefaultAiKnowledgeBase, getDefaultAiSynthesizedStrategy } from "./defaults";
 

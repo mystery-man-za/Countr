@@ -1,5 +1,5 @@
 import { Request, Response, Application } from "express";
-import { scalarAiDb } from "../../../composition";
+import { scalarAiDb } from "../../composition";
 import { StrategyMode, StrategyRow, TradeRecord } from "../../../shared/types";
 import { STRATEGY_TEMPLATES, getStrategyTemplateById, createStrategyFromTemplate } from "../../../knowledgebase/strategies";
 

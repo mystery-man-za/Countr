@@ -1,6 +1,6 @@
 export async function runDoctor(): Promise<number> {
   const http = await import("node:http");
-  const cfg = await import("../../config");
+  const cfg = await import("../../core/config");
   const c = cfg.loadConfig();
   console.log("ScalarAI doctor");
   console.log("  NODE_ENV:", c.nodeEnv);
